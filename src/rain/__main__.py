@@ -132,7 +132,7 @@ def generate(duration_hours, seed, out, assets_dir, sample_rate, lufs,
         # Generate directly to output
         engine.generate_to_file(out_path, duration_seconds, target_lufs=lufs)
         click.echo(f"\n✓ Audio saved to: {out_path}")
-        else:
+    else:
         # Generate to temp file for video muxing
         with tempfile.NamedTemporaryFile(suffix='_audio.wav', delete=False) as tmp:
             audio_path = Path(tmp.name)
