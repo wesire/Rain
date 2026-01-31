@@ -14,6 +14,8 @@ ENV/
 *.avi
 *.mov
 frames/
+test_frames/
+output_videos/
 *.png
 test_*.mp4
 test_*.wav
@@ -21,6 +23,7 @@ rain_audio.wav
 background.png
 test_background.png
 test_audio.wav
+rain_sleep_video.mp4
 
 # IDE
 .vscode/
