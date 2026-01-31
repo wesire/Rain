@@ -247,8 +247,8 @@ def generate_video_with_timeline(duration_hours, intensity_timeline, output_file
         # Combine audio and video
         audio = AudioFileClip(audio_file)
         video = ImageClip(background_file, duration=duration_seconds)
-        video = video.set_audio(audio)
-        video = video.set_fps(1)
+        video = video.with_audio(audio)
+        video = video.with_fps(1)
         
         generation_status['message'] = 'Encoding final video...'
         generation_status['progress'] = 98

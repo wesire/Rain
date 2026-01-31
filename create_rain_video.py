@@ -78,8 +78,8 @@ def create_rain_video(duration_hours=12, intensity='medium', style='static',
         video = ImageClip(background_file, duration=duration_seconds)
         
         print("Setting audio track...")
-        video = video.set_audio(audio)
-        video = video.set_fps(fps)
+        video = video.with_audio(audio)
+        video = video.with_fps(fps)
         
         print(f"Writing final video to {output_file}...")
         print("This may take a while for a 12-hour video...")
@@ -140,8 +140,8 @@ def create_quick_test_video(duration_seconds=60, output_file='test_rain.mp4'):
     # Combine with moviepy
     audio = AudioFileClip(audio_file)
     video = ImageClip(background_file, duration=duration_seconds)
-    video = video.set_audio(audio)
-    video = video.set_fps(30)
+    video = video.with_audio(audio)
+    video = video.with_fps(30)
     
     video.write_videofile(
         output_file,
