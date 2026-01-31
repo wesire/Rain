@@ -106,6 +106,34 @@ def analyze(audio_path: str):
     
     dynamic_range_db = 20 * np.log10(dynamic_range) if dynamic_range > 0 else -np.inf
     
+    # Band energy analysis (detect "tinny" or "fire crackle" sound)
+    bands = {
+        'low (<500Hz)': (20, 500),
+        'mid (500-2kHz)': (500, 2000),
+        'high-mid (2-8kHz)': (2000, 8000),
+        'high (>8kHz)': (8000, sr // 2)
+    }
+    
+    band_energies = {}
+    from scipy import signal as scipy_signal
+    for name, (low, high) in bands.items():
+        try:
+            sos = scipy_signal.butter(4, [low, min(high, sr // 2 - 1)], btype='band', fs=sr, output='sos')
+            if audio.ndim == 2:
+                filtered = scipy_signal.sosfilt(sos, audio[:, 0])
+            else:
+                filtered = scipy_signal.sosfilt(sos, audio)
+            energy = np.mean(filtered ** 2)
+            band_energies[name] = energy
+        except:
+            band_energies[name] = 0.0
+    
+    total_energy = sum(band_energies.values())
+    if total_energy > 0:
+        band_ratios = {k: v / total_energy * 100 for k, v in band_energies.items()}
+    else:
+        band_ratios = {k: 0.0 for k in band_energies.keys()}
+    
     # Print results
     print("=" * 50)
     print("AUDIO QUALITY METRICS")
@@ -122,6 +150,23 @@ def analyze(audio_path: str):
     
     print(f"Dynamic Range:        {dynamic_range_db:>7.1f} dB")
     print(f"Clipping:             {clip_status}")
+    print()
+    
+    # Band energy distribution
+    print("=" * 50)
+    print("FREQUENCY BAND ENERGY")
+    print("=" * 50)
+    print()
+    
+    for band, ratio in band_ratios.items():
+        warning = ""
+        if "2-8kHz" in band and ratio > 35:
+            warning = " ⚠️  HIGH - may sound tinny/crackly"
+        elif "2-8kHz" in band and ratio > 25:
+            warning = " ⚠️  Elevated"
+        elif "2-8kHz" in band and ratio < 20:
+            warning = " ✓ Good for sleep"
+        print(f"  {band:20s}: {ratio:>5.1f}%{warning}")
     print()
     
     print("=" * 50)
