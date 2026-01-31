@@ -7,7 +7,7 @@ Provides an interactive interface to adjust rain and audio parameters throughout
 import os
 import json
 import threading
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
 from generate_rain_audio import generate_rain_audio
 from generate_rain_video import create_static_background
 from create_rain_video import create_rain_video
@@ -17,6 +17,11 @@ from scipy import signal
 from tqdm import tqdm
 from PIL import Image
 from moviepy.editor import ImageClip, AudioFileClip
+from pathlib import Path
+import config
+from freesound_client import FreesoundClient
+from audio_stitcher import MultiLayerMixer
+import shutil
 
 app = Flask(__name__)
 
@@ -337,8 +342,221 @@ def download_file(filename):
         return send_file(file_path, as_attachment=True)
     return jsonify({'error': 'File not found'}), 404
 
+# ============= Sample Library Management API =============
+
+@app.route('/api/samples/list', methods=['GET'])
+def api_list_samples():
+    """List all samples in the library organized by category."""
+    config.ensure_sample_directories()
+    
+    samples = {
+        'beds': [],
+        'textures': [],
+        'details': [],
+        'environmental': []
+    }
+    
+    for category in samples.keys():
+        category_path = config.SAMPLES_DIR / category
+        if category_path.exists():
+            for file_path in category_path.glob('*'):
+                if file_path.suffix.lower() in config.SUPPORTED_AUDIO_FORMATS:
+                    samples[category].append({
+                        'name': file_path.name,
+                        'path': str(file_path.relative_to(config.BASE_DIR)),
+                        'size': file_path.stat().st_size
+                    })
+    
+    return jsonify(samples)
+
+@app.route('/api/samples/upload', methods=['POST'])
+def api_upload_sample():
+    """Upload a custom sample file."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    category = request.form.get('category', 'details')
+    
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    # Validate category
+    if category not in ['beds', 'textures', 'details', 'environmental']:
+        return jsonify({'error': 'Invalid category'}), 400
+    
+    # Validate file extension
+    file_ext = Path(file.filename).suffix.lower()
+    if file_ext not in config.SUPPORTED_AUDIO_FORMATS:
+        return jsonify({'error': 'Unsupported file format'}), 400
+    
+    # Save file
+    config.ensure_sample_directories()
+    category_path = config.SAMPLES_DIR / category
+    file_path = category_path / file.filename
+    
+    try:
+        file.save(str(file_path))
+        return jsonify({
+            'status': 'success',
+            'filename': file.filename,
+            'category': category
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/samples/delete', methods=['POST'])
+def api_delete_sample():
+    """Delete a sample file."""
+    data = request.json
+    category = data.get('category')
+    filename = data.get('filename')
+    
+    if not category or not filename:
+        return jsonify({'error': 'Missing category or filename'}), 400
+    
+    # Security: Validate paths
+    if category not in ['beds', 'textures', 'details', 'environmental']:
+        return jsonify({'error': 'Invalid category'}), 400
+    
+    file_path = config.SAMPLES_DIR / category / filename
+    
+    # Ensure file is within samples directory
+    try:
+        file_path = file_path.resolve()
+        if not str(file_path).startswith(str(config.SAMPLES_DIR.resolve())):
+            return jsonify({'error': 'Invalid file path'}), 400
+    except Exception:
+        return jsonify({'error': 'Invalid file path'}), 400
+    
+    if file_path.exists():
+        try:
+            file_path.unlink()
+            return jsonify({'status': 'success'})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'error': 'File not found'}), 404
+
+@app.route('/api/samples/preview/<category>/<filename>')
+def api_preview_sample(category, filename):
+    """Stream a sample file for preview."""
+    if category not in ['beds', 'textures', 'details', 'environmental']:
+        return jsonify({'error': 'Invalid category'}), 400
+    
+    file_path = config.SAMPLES_DIR / category / filename
+    
+    # Security check
+    try:
+        file_path = file_path.resolve()
+        if not str(file_path).startswith(str(config.SAMPLES_DIR.resolve())):
+            return jsonify({'error': 'Invalid file path'}), 400
+    except Exception:
+        return jsonify({'error': 'Invalid file path'}), 400
+    
+    if file_path.exists():
+        return send_file(file_path)
+    
+    return jsonify({'error': 'File not found'}), 404
+
+# ============= Freesound API Integration =============
+
+@app.route('/api/freesound/search', methods=['POST'])
+def api_freesound_search():
+    """Search Freesound for audio samples."""
+    data = request.json
+    query = data.get('query', '')
+    page = data.get('page', 1)
+    filters = data.get('filters', {})
+    
+    if not query:
+        return jsonify({'error': 'No search query provided'}), 400
+    
+    # Check if API key is configured
+    if not config.FREESOUND_API_KEY:
+        return jsonify({
+            'error': 'Freesound API key not configured. Please set FREESOUND_API_KEY environment variable.',
+            'results': [],
+            'count': 0
+        }), 200
+    
+    try:
+        client = FreesoundClient()
+        results = client.search(query, filter_params=filters, page=page)
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'results': [],
+            'count': 0
+        }), 200
+
+@app.route('/api/freesound/download', methods=['POST'])
+def api_freesound_download():
+    """Download a sound from Freesound."""
+    data = request.json
+    sound_id = data.get('sound_id')
+    category = data.get('category', 'details')
+    
+    if not sound_id:
+        return jsonify({'error': 'No sound ID provided'}), 400
+    
+    if category not in ['beds', 'textures', 'details', 'environmental']:
+        return jsonify({'error': 'Invalid category'}), 400
+    
+    if not config.FREESOUND_API_KEY:
+        return jsonify({'error': 'Freesound API key not configured'}), 400
+    
+    try:
+        client = FreesoundClient()
+        
+        # Get sound info to get the name
+        sound_info = client.get_sound_info(sound_id)
+        if 'error' in sound_info:
+            return jsonify({'error': sound_info['error']}), 500
+        
+        # Create filename from sound name
+        filename = f"{sound_info['name']}_{sound_id}.mp3"
+        # Sanitize filename
+        filename = "".join(c for c in filename if c.isalnum() or c in ('_', '-', '.')).rstrip()
+        
+        config.ensure_sample_directories()
+        output_path = config.SAMPLES_DIR / category / filename
+        
+        # Download
+        success = client.download_sound(sound_id, output_path, use_preview=True)
+        
+        if success:
+            return jsonify({
+                'status': 'success',
+                'filename': filename,
+                'category': category
+            })
+        else:
+            return jsonify({'error': 'Download failed'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/config', methods=['GET'])
+def api_get_config():
+    """Get current configuration."""
+    return jsonify(config.get_config())
+
+@app.route('/api/config', methods=['POST'])
+def api_update_config():
+    """Update configuration (layer volumes, frequencies, etc.)."""
+    data = request.json
+    
+    # This would update runtime configuration
+    # For now, just return success
+    return jsonify({'status': 'success'})
+
 def main():
     """Run the web UI."""
+    # Ensure sample directories exist
+    config.ensure_sample_directories()
+    
     print("=" * 60)
     print("Rain Video Creator - Web UI")
     print("=" * 60)
