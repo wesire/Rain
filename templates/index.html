@@ -1189,15 +1189,31 @@
         }
 
         // Waveform visualization functions
+        // Shared AudioContext to avoid resource limits
+        const sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Cache for waveform audio buffers
+        const waveformBuffers = new Map();
+        
         async function loadAndDrawWaveform(audioUrl, canvas) {
             try {
+                // Check cache first
+                if (waveformBuffers.has(audioUrl)) {
+                    const audioBuffer = waveformBuffers.get(audioUrl);
+                    drawWaveform(audioBuffer, canvas);
+                    return audioBuffer;
+                }
+                
                 const response = await fetch(audioUrl);
                 const arrayBuffer = await response.arrayBuffer();
                 
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                const audioBuffer = await sharedAudioContext.decodeAudioData(arrayBuffer);
+                
+                // Cache the buffer
+                waveformBuffers.set(audioUrl, audioBuffer);
                 
                 drawWaveform(audioBuffer, canvas);
+                return audioBuffer;
             } catch (error) {
                 console.error('Error loading waveform:', error);
                 // Draw placeholder on error
@@ -1284,44 +1300,34 @@
                 const audio = new Audio(previewUrl);
                 audio.play();
                 
-                // Store audio buffer for redrawing
-                let audioBuffer = null;
-                loadAndDrawWaveform(previewUrl, canvas).then(() => {
-                    // Get the audio buffer for progress updates
-                    fetch(previewUrl)
-                        .then(response => response.arrayBuffer())
-                        .then(arrayBuffer => {
-                            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                            return audioContext.decodeAudioData(arrayBuffer);
-                        })
-                        .then(buffer => {
-                            audioBuffer = buffer;
-                        })
-                        .catch(error => console.error('Error loading audio buffer:', error));
-                });
+                // Load waveform and get audio buffer (uses cache if available)
+                loadAndDrawWaveform(previewUrl, canvas).then(audioBuffer => {
+                    // Update progress indicator
+                    const progressInterval = setInterval(() => {
+                        if (audio.duration && audioBuffer) {
+                            const progress = audio.currentTime / audio.duration;
+                            drawWaveform(audioBuffer, canvas);
+                            updateWaveformProgress(canvas, progress);
+                        }
+                    }, 100);
+                    
+                    currentlyPlaying.progressInterval = progressInterval;
+                    currentlyPlaying.audioBuffer = audioBuffer;
+                }).catch(error => console.error('Error loading audio buffer:', error));
                 
-                // Update progress
-                const progressInterval = setInterval(() => {
-                    if (audio.duration && audioBuffer) {
-                        const progress = audio.currentTime / audio.duration;
-                        drawWaveform(audioBuffer, canvas);
-                        updateWaveformProgress(canvas, progress);
-                    }
-                }, 100);
-                
-                currentlyPlaying = { soundId, audio, progressInterval, audioBuffer };
+                currentlyPlaying = { soundId, audio, progressInterval: null, audioBuffer: null };
                 button.textContent = '⏸️';
                 
                 audio.onended = () => {
                     if (currentlyPlaying && currentlyPlaying.progressInterval) {
                         clearInterval(currentlyPlaying.progressInterval);
                     }
+                    if (currentlyPlaying && currentlyPlaying.audioBuffer) {
+                        drawWaveform(currentlyPlaying.audioBuffer, canvas);
+                    }
                     currentlyPlaying = null;
                     button.textContent = '▶️';
-                    // Redraw waveform without progress
-                    if (audioBuffer) {
-                        drawWaveform(audioBuffer, canvas);
-                    }
+                };
                 };
             }
         }

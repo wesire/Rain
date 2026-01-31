@@ -39,6 +39,17 @@ generation_status = {
 # Thread cancellation event
 cancel_event = threading.Event()
 
+# Category mapping for frontend/backend compatibility
+CATEGORY_MAP = {
+    'bed': 'beds',
+    'beds': 'beds',
+    'texture': 'textures',
+    'textures': 'textures',
+    'detail': 'details',
+    'details': 'details',
+    'environmental': 'environmental'
+}
+
 def normalize_audio(audio_path, target_db=-3.0):
     """
     Normalize audio file to target dB level.
@@ -51,7 +62,7 @@ def normalize_audio(audio_path, target_db=-3.0):
         Tuple of (original_peak_db, target_db) or None if error
     """
     try:
-        # Load audio
+        # Load audio at native sample rate, mono
         y, sr = librosa.load(str(audio_path), sr=None, mono=True)
         
         # Calculate current peak
@@ -65,7 +76,7 @@ def normalize_audio(audio_path, target_db=-3.0):
         # Apply gain
         y_normalized = y * gain
         
-        # Save normalized audio back
+        # Save normalized audio back at original sample rate
         sf.write(str(audio_path), y_normalized, sr)
         
         return current_db, target_db
@@ -418,20 +429,10 @@ def api_upload_sample():
         return jsonify({'error': 'No file selected'}), 400
     
     # Normalize category to plural form (except environmental)
-    category_map = {
-        'bed': 'beds',
-        'beds': 'beds',
-        'texture': 'textures',
-        'textures': 'textures',
-        'detail': 'details',
-        'details': 'details',
-        'environmental': 'environmental'
-    }
-    
-    if category not in category_map:
+    if category not in CATEGORY_MAP:
         return jsonify({'error': 'Invalid category'}), 400
     
-    category = category_map[category]
+    category = CATEGORY_MAP[category]
     
     # Validate file extension
     file_ext = Path(file.filename).suffix.lower()
@@ -464,20 +465,10 @@ def api_delete_sample():
         return jsonify({'error': 'Missing category or filename'}), 400
     
     # Normalize category to plural form (except environmental)
-    category_map = {
-        'bed': 'beds',
-        'beds': 'beds',
-        'texture': 'textures',
-        'textures': 'textures',
-        'detail': 'details',
-        'details': 'details',
-        'environmental': 'environmental'
-    }
-    
-    if category not in category_map:
+    if category not in CATEGORY_MAP:
         return jsonify({'error': 'Invalid category'}), 400
     
-    category = category_map[category]
+    category = CATEGORY_MAP[category]
     
     file_path = config.SAMPLES_DIR / category / filename
     
@@ -502,20 +493,10 @@ def api_delete_sample():
 def api_preview_sample(category, filename):
     """Stream a sample file for preview."""
     # Normalize category to plural form (except environmental)
-    category_map = {
-        'bed': 'beds',
-        'beds': 'beds',
-        'texture': 'textures',
-        'textures': 'textures',
-        'detail': 'details',
-        'details': 'details',
-        'environmental': 'environmental'
-    }
-    
-    if category not in category_map:
+    if category not in CATEGORY_MAP:
         return jsonify({'error': 'Invalid category'}), 400
     
-    category = category_map[category]
+    category = CATEGORY_MAP[category]
     
     file_path = config.SAMPLES_DIR / category / filename
     
@@ -575,20 +556,10 @@ def api_freesound_download():
         return jsonify({'error': 'No sound ID provided'}), 400
     
     # Normalize category to plural form (except environmental)
-    category_map = {
-        'bed': 'beds',
-        'beds': 'beds',
-        'texture': 'textures',
-        'textures': 'textures',
-        'detail': 'details',
-        'details': 'details',
-        'environmental': 'environmental'
-    }
-    
-    if category not in category_map:
+    if category not in CATEGORY_MAP:
         return jsonify({'error': 'Invalid category'}), 400
     
-    category = category_map[category]
+    category = CATEGORY_MAP[category]
     
     if not config.FREESOUND_API_KEY:
         return jsonify({'error': 'Freesound API key not configured'}), 400
