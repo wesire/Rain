@@ -16,8 +16,10 @@ This project provides a complete solution for creating professional rain sound v
 - 🎵 **Procedural Rain Audio Generation**: Creates realistic rain sounds by layering thousands of individual raindrop sounds
 - 🎨 **Customizable Visuals**: Static backgrounds or animated rain effects
 - ⚙️ **Flexible Parameters**: Control intensity, duration, and style
-- 🚀 **Easy to Use**: Simple command-line interface
+- 🚀 **Easy to Use**: Web UI or command-line interface
 - 📦 **Standalone**: No external audio samples needed
+- 🌊 **Dynamic Intensity**: Interactive timeline editor to vary rain intensity throughout the video
+- 🎛️ **Beautiful Web UI**: Modern, intuitive interface for creating videos with variable intensity
 
 ## Installation
 
@@ -49,6 +51,30 @@ pip install -r requirements.txt
 ```
 
 ## Quick Start
+
+### Option 1: Web UI (Recommended)
+
+The easiest way to create rain videos with dynamic intensity variations:
+
+```bash
+python web_ui.py
+```
+
+Then open your browser to **http://localhost:5000**
+
+**Features:**
+- 🎨 Beautiful, modern interface
+- 📊 Interactive timeline editor to control rain intensity over time
+- 🎛️ Real-time visual preview of intensity curve
+- 🎯 Drag-and-drop control points
+- ⚡ Preset patterns (Light Rain, Storm)
+- 🔄 Live generation progress tracking
+
+See [WEB_UI_README.md](WEB_UI_README.md) for detailed UI documentation.
+
+### Option 2: Command Line
+
+For quick command-line generation with fixed intensity:
 
 ### 1. Create a Test Video (1 minute)
 
