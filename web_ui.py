@@ -381,9 +381,21 @@ def api_upload_sample():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
     
-    # Validate category
-    if category not in ['beds', 'textures', 'details', 'environmental']:
+    # Normalize category to plural form (except environmental)
+    category_map = {
+        'bed': 'beds',
+        'beds': 'beds',
+        'texture': 'textures',
+        'textures': 'textures',
+        'detail': 'details',
+        'details': 'details',
+        'environmental': 'environmental'
+    }
+    
+    if category not in category_map:
         return jsonify({'error': 'Invalid category'}), 400
+    
+    category = category_map[category]
     
     # Validate file extension
     file_ext = Path(file.filename).suffix.lower()
@@ -415,9 +427,21 @@ def api_delete_sample():
     if not category or not filename:
         return jsonify({'error': 'Missing category or filename'}), 400
     
-    # Security: Validate paths
-    if category not in ['beds', 'textures', 'details', 'environmental']:
+    # Normalize category to plural form (except environmental)
+    category_map = {
+        'bed': 'beds',
+        'beds': 'beds',
+        'texture': 'textures',
+        'textures': 'textures',
+        'detail': 'details',
+        'details': 'details',
+        'environmental': 'environmental'
+    }
+    
+    if category not in category_map:
         return jsonify({'error': 'Invalid category'}), 400
+    
+    category = category_map[category]
     
     file_path = config.SAMPLES_DIR / category / filename
     
@@ -441,8 +465,21 @@ def api_delete_sample():
 @app.route('/api/samples/preview/<category>/<filename>')
 def api_preview_sample(category, filename):
     """Stream a sample file for preview."""
-    if category not in ['beds', 'textures', 'details', 'environmental']:
+    # Normalize category to plural form (except environmental)
+    category_map = {
+        'bed': 'beds',
+        'beds': 'beds',
+        'texture': 'textures',
+        'textures': 'textures',
+        'detail': 'details',
+        'details': 'details',
+        'environmental': 'environmental'
+    }
+    
+    if category not in category_map:
         return jsonify({'error': 'Invalid category'}), 400
+    
+    category = category_map[category]
     
     file_path = config.SAMPLES_DIR / category / filename
     
@@ -501,8 +538,21 @@ def api_freesound_download():
     if not sound_id:
         return jsonify({'error': 'No sound ID provided'}), 400
     
-    if category not in ['beds', 'textures', 'details', 'environmental']:
+    # Normalize category to plural form (except environmental)
+    category_map = {
+        'bed': 'beds',
+        'beds': 'beds',
+        'texture': 'textures',
+        'textures': 'textures',
+        'detail': 'details',
+        'details': 'details',
+        'environmental': 'environmental'
+    }
+    
+    if category not in category_map:
         return jsonify({'error': 'Invalid category'}), 400
+    
+    category = category_map[category]
     
     if not config.FREESOUND_API_KEY:
         return jsonify({'error': 'Freesound API key not configured'}), 400

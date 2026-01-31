@@ -906,6 +906,12 @@
 
         // Sample Library Management
         const categories = ['bed', 'texture', 'detail', 'environmental'];
+        const categoryMap = {
+            'bed': 'beds',
+            'texture': 'textures',
+            'detail': 'details',
+            'environmental': 'environmental'
+        };
         
         async function loadSamples() {
             try {
@@ -916,7 +922,9 @@
                     const list = document.getElementById(category + 'List');
                     list.innerHTML = '';
                     
-                    const samples = data[category] || [];
+                    // Use plural form to access backend data
+                    const backendCategory = categoryMap[category];
+                    const samples = data[backendCategory] || [];
                     samples.forEach(sample => {
                         const filename = typeof sample === 'string' ? sample : sample.name;
                         const item = document.createElement('div');
