@@ -29,6 +29,9 @@ generation_status = {
     'error': None
 }
 
+# Thread cancellation event
+cancel_event = threading.Event()
+
 
 def generate_rain_audio_variable(duration_seconds, intensity_timeline, sample_rate=44100, output_file='rain.wav'):
     """
@@ -104,6 +107,11 @@ def generate_rain_audio_variable(duration_seconds, intensity_timeline, sample_ra
     generation_status['progress'] = 20
     
     for seg_idx in range(num_segments):
+        # Check for cancellation
+        if cancel_event.is_set():
+            generation_status['message'] = 'Generation cancelled by user'
+            return
+        
         if seg_idx % 10 == 0:
             progress = 20 + int((seg_idx / num_segments) * 60)
             generation_status['progress'] = progress
@@ -145,11 +153,12 @@ def generate_rain_audio_variable(duration_seconds, intensity_timeline, sample_ra
     generation_status['message'] = 'Adding ambient background...'
     generation_status['progress'] = 85
     
-    # Add subtle background noise
-    background = np.random.randn(total_samples) * 0.01
+    # Add subtle background noise for continuous ambiance
+    print("Adding ambient background...")
+    background_noise = np.random.randn(total_samples) * 0.01
     b, a = signal.butter(4, 500 / (sample_rate / 2), btype='low')
-    background = signal.filtfilt(b, a, background)
-    audio += background
+    background_noise = signal.filtfilt(b, a, background_noise)
+    audio += background_noise
     
     # Normalize
     audio = audio / np.max(np.abs(audio)) * 0.9
@@ -200,9 +209,12 @@ def generate_video_with_timeline(duration_hours, intensity_timeline, output_file
     """
     Generate complete video with variable intensity timeline.
     """
-    global generation_status
+    global generation_status, cancel_event
     
     try:
+        # Reset cancellation event
+        cancel_event.clear()
+        
         generation_status['in_progress'] = True
         generation_status['progress'] = 0
         generation_status['message'] = 'Starting video generation...'
@@ -213,6 +225,12 @@ def generate_video_with_timeline(duration_hours, intensity_timeline, output_file
         # Generate audio with variable intensity
         audio_file = 'rain_audio_variable.wav'
         generate_rain_audio_variable(duration_seconds, intensity_timeline, output_file=audio_file)
+        
+        # Check for cancellation after audio generation
+        if cancel_event.is_set():
+            generation_status['in_progress'] = False
+            generation_status['message'] = 'Generation cancelled'
+            return
         
         generation_status['message'] = 'Creating video background...'
         generation_status['progress'] = 96
@@ -298,17 +316,31 @@ def api_status():
 @app.route('/api/cancel', methods=['POST'])
 def api_cancel():
     """API endpoint to cancel generation."""
-    global generation_status
+    global generation_status, cancel_event
+    
+    # Signal the thread to cancel
+    cancel_event.set()
+    
     generation_status['in_progress'] = False
-    generation_status['message'] = 'Generation cancelled'
+    generation_status['message'] = 'Cancelling generation...'
+    
     return jsonify({'status': 'cancelled'})
 
 
 @app.route('/download/<filename>')
 def download_file(filename):
     """Download generated video file."""
-    if os.path.exists(filename):
-        return send_file(filename, as_attachment=True)
+    # Security: Only allow downloading files from current directory
+    # Prevent directory traversal attacks
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(os.getcwd(), safe_filename)
+    
+    # Only allow downloading .mp4 files
+    if not safe_filename.endswith('.mp4'):
+        return jsonify({'error': 'Invalid file type'}), 400
+    
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return send_file(file_path, as_attachment=True)
     return jsonify({'error': 'File not found'}), 404
 
 
@@ -320,9 +352,10 @@ def main():
     print("\nStarting web server...")
     print("Open your browser to: http://localhost:5000")
     print("\nPress Ctrl+C to stop the server.")
+    print("\nNote: Server is only accessible from localhost for security.")
     print("=" * 60)
     
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='127.0.0.1', port=5000, debug=False)
 
 
 if __name__ == '__main__':
