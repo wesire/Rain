@@ -16,7 +16,7 @@ from scipy.io import wavfile
 from scipy import signal
 from tqdm import tqdm
 from PIL import Image
-from moviepy import ImageClip, AudioFileClip
+from moviepy.editor import ImageClip, AudioFileClip
 
 app = Flask(__name__)
 
@@ -31,7 +31,6 @@ generation_status = {
 
 # Thread cancellation event
 cancel_event = threading.Event()
-
 
 def generate_rain_audio_variable(duration_seconds, intensity_timeline, sample_rate=44100, output_file='rain.wav'):
     """
@@ -172,7 +171,6 @@ def generate_rain_audio_variable(duration_seconds, intensity_timeline, sample_ra
     
     # Save to WAV file
     wavfile.write(output_file, sample_rate, audio_int16)
-    
 
 def generate_raindrop_sound(sample_rate=44100, drop_type='light'):
     """Generate a single raindrop sound."""
@@ -204,7 +202,6 @@ def generate_raindrop_sound(sample_rate=44100, drop_type='light'):
     drop_sound = filtered * envelope * amplitude
     
     return drop_sound
-
 
 def generate_video_with_timeline(duration_hours, intensity_timeline, output_file='rain_video.mp4'):
     """
@@ -247,8 +244,8 @@ def generate_video_with_timeline(duration_hours, intensity_timeline, output_file
         # Combine audio and video
         audio = AudioFileClip(audio_file)
         video = ImageClip(background_file, duration=duration_seconds)
-        video = video.with_audio(audio)
-        video = video.with_fps(1)
+        video = video.set_audio(audio)
+        video = video.set_fps(1)
         
         generation_status['message'] = 'Encoding final video...'
         generation_status['progress'] = 98
@@ -283,7 +280,6 @@ def index():
     """Serve the main UI page."""
     return render_template('index.html')
 
-
 @app.route('/api/generate', methods=['POST'])
 def api_generate():
     """API endpoint to start video generation."""
@@ -307,12 +303,10 @@ def api_generate():
     
     return jsonify({'status': 'started'})
 
-
 @app.route('/api/status', methods=['GET'])
 def api_status():
     """API endpoint to get generation status."""
     return jsonify(generation_status)
-
 
 @app.route('/api/cancel', methods=['POST'])
 def api_cancel():
@@ -326,7 +320,6 @@ def api_cancel():
     generation_status['message'] = 'Cancelling generation...'
     
     return jsonify({'status': 'cancelled'})
-
 
 @app.route('/download/<filename>')
 def download_file(filename):
@@ -343,7 +336,6 @@ def download_file(filename):
     if os.path.exists(file_path) and os.path.isfile(file_path):
         return send_file(file_path, as_attachment=True)
     return jsonify({'error': 'File not found'}), 404
-
 
 def main():
     """Run the web UI."""
