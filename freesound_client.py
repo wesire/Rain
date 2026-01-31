@@ -70,7 +70,7 @@ class FreesoundClient:
                 params['filter'] = params.get('filter', '') + f" license:{filter_params['license']}"
         
         try:
-            response = requests.get(url, params=params, timeout=10)
+            response = requests.get(url, params=params, timeout=60)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -94,7 +94,7 @@ class FreesoundClient:
         params = {'token': self.api_key}
         
         try:
-            response = requests.get(url, params=params, timeout=10)
+            response = requests.get(url, params=params, timeout=60)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -128,16 +128,35 @@ class FreesoundClient:
                 # For now, we'll use the high-quality preview
                 download_url = sound_info['previews']['preview-hq-mp3']
             
-            # Download the file
-            response = requests.get(download_url, timeout=30)
-            response.raise_for_status()
+            # Download the file with retries
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = requests.get(download_url, timeout=60)
+                    response.raise_for_status()
+                    
+                    # Save to file
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(output_path, 'wb') as f:
+                        f.write(response.content)
+                    
+                    return True
+                except requests.exceptions.Timeout:
+                    if attempt < max_retries - 1:
+                        print(f"Download timeout, retrying ({attempt + 2}/{max_retries})...")
+                        continue
+                    else:
+                        print(f"Download failed after {max_retries} attempts: Timeout")
+                        return False
+                except requests.exceptions.RequestException as e:
+                    if attempt < max_retries - 1:
+                        print(f"Download error, retrying ({attempt + 2}/{max_retries})...")
+                        continue
+                    else:
+                        print(f"Download failed after {max_retries} attempts: {e}")
+                        return False
             
-            # Save to file
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(output_path, 'wb') as f:
-                f.write(response.content)
-            
-            return True
+            return False
             
         except (requests.exceptions.RequestException, KeyError) as e:
             print(f"Error downloading sound: {e}")

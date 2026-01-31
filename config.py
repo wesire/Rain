@@ -19,6 +19,22 @@ TEXTURES_DIR = SAMPLES_DIR / 'textures'
 DETAILS_DIR = SAMPLES_DIR / 'details'
 ENVIRONMENTAL_DIR = SAMPLES_DIR / 'environmental'
 
+# Category Display Names (user-friendly names)
+CATEGORY_DISPLAY_NAMES = {
+    'beds': '🎵 Base Layer',
+    'textures': '🌊 Variation Layer',
+    'details': '💧 Accent Sounds',
+    'environmental': '🌩️ Atmosphere'
+}
+
+# Category Descriptions
+CATEGORY_DESCRIPTIONS = {
+    'beds': 'Continuous background rain that loops',
+    'textures': 'Different rain textures layered on top',
+    'details': 'Individual drops, drips, splashes',
+    'environmental': 'Thunder, wind, ambient sounds'
+}
+
 # Audio Processing Settings
 DEFAULT_SAMPLE_RATE = 44100
 DEFAULT_BIT_DEPTH = 16
@@ -70,6 +86,8 @@ def get_config():
         'detail_frequency': DEFAULT_DETAIL_FREQUENCY,
         'environmental_frequency': DEFAULT_ENVIRONMENTAL_FREQUENCY,
         'sample_rate': DEFAULT_SAMPLE_RATE,
+        'category_names': CATEGORY_DISPLAY_NAMES,
+        'category_descriptions': CATEGORY_DESCRIPTIONS,
         'normalization': {
             'auto_normalize': AUTO_NORMALIZE_ENABLED,
             'download_target_db': DEFAULT_DOWNLOAD_NORMALIZATION_DB,

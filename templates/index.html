@@ -635,6 +635,75 @@
                 gap: 10px;
             }
         }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(30, 60, 114, 0.95);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border-left: 4px solid #4facfe;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+            min-width: 250px;
+            max-width: 400px;
+        }
+
+        .toast.success {
+            border-left-color: #43e97b;
+        }
+
+        .toast.error {
+            border-left-color: #f5576c;
+        }
+
+        .toast.info {
+            border-left-color: #4facfe;
+        }
+
+        .toast-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .waveform-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a2e;
+            border-radius: 5px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8em;
+        }
     </style>
 </head>
 <body>
@@ -738,37 +807,41 @@
         <!-- Sample Library Tab -->
         <div id="libraryTab" class="tab-content">
             <div class="sample-section">
-                <h3>🛏️ Bed Samples</h3>
+                <h3>🎵 Base Layer</h3>
+                <p style="color: #b0c4de; font-size: 0.9em; margin-bottom: 10px;">Continuous background rain that loops</p>
                 <div class="sample-list" id="bedList"></div>
                 <div class="upload-area" onclick="document.getElementById('bedUpload').click()">
-                    <p>📤 Click to upload bed samples</p>
+                    <p>📤 Click to upload base layer samples</p>
                     <input type="file" id="bedUpload" class="upload-input" accept="audio/*" multiple>
                 </div>
             </div>
 
             <div class="sample-section">
-                <h3>🎨 Texture Samples</h3>
+                <h3>🌊 Variation Layer</h3>
+                <p style="color: #b0c4de; font-size: 0.9em; margin-bottom: 10px;">Different rain textures layered on top</p>
                 <div class="sample-list" id="textureList"></div>
                 <div class="upload-area" onclick="document.getElementById('textureUpload').click()">
-                    <p>📤 Click to upload texture samples</p>
+                    <p>📤 Click to upload variation layer samples</p>
                     <input type="file" id="textureUpload" class="upload-input" accept="audio/*" multiple>
                 </div>
             </div>
 
             <div class="sample-section">
-                <h3>💧 Detail Samples</h3>
+                <h3>💧 Accent Sounds</h3>
+                <p style="color: #b0c4de; font-size: 0.9em; margin-bottom: 10px;">Individual drops, drips, splashes</p>
                 <div class="sample-list" id="detailList"></div>
                 <div class="upload-area" onclick="document.getElementById('detailUpload').click()">
-                    <p>📤 Click to upload detail samples</p>
+                    <p>📤 Click to upload accent sound samples</p>
                     <input type="file" id="detailUpload" class="upload-input" accept="audio/*" multiple>
                 </div>
             </div>
 
             <div class="sample-section">
-                <h3>🌍 Environmental Samples</h3>
+                <h3>🌩️ Atmosphere</h3>
+                <p style="color: #b0c4de; font-size: 0.9em; margin-bottom: 10px;">Thunder, wind, ambient sounds</p>
                 <div class="sample-list" id="environmentalList"></div>
                 <div class="upload-area" onclick="document.getElementById('environmentalUpload').click()">
-                    <p>📤 Click to upload environmental samples</p>
+                    <p>📤 Click to upload atmosphere samples</p>
                     <input type="file" id="environmentalUpload" class="upload-input" accept="audio/*" multiple>
                 </div>
             </div>
@@ -798,8 +871,8 @@
                 
                 <div class="config-item">
                     <div class="config-label">
-                        <h4>🛏️ Bed Layer</h4>
-                        <p>Continuous ambient rain background</p>
+                        <h4>🎵 Base Layer</h4>
+                        <p>Continuous background rain that loops</p>
                     </div>
                     <div style="display: flex; gap: 20px; align-items: center;">
                         <label class="toggle-switch">
@@ -816,8 +889,8 @@
 
                 <div class="config-item">
                     <div class="config-label">
-                        <h4>🎨 Texture Layer</h4>
-                        <p>Mid-range rain textures and patterns</p>
+                        <h4>🌊 Variation Layer</h4>
+                        <p>Different rain textures layered on top</p>
                     </div>
                     <div style="display: flex; gap: 20px; align-items: center;">
                         <label class="toggle-switch">
@@ -834,8 +907,8 @@
 
                 <div class="config-item">
                     <div class="config-label">
-                        <h4>💧 Detail Layer</h4>
-                        <p>Individual rain drops and splashes</p>
+                        <h4>💧 Accent Sounds</h4>
+                        <p>Individual drops, drips, splashes</p>
                     </div>
                     <div style="display: flex; gap: 20px; align-items: center;">
                         <label class="toggle-switch">
@@ -857,8 +930,8 @@
 
                 <div class="config-item">
                     <div class="config-label">
-                        <h4>🌍 Environmental Layer</h4>
-                        <p>Thunder, wind, and ambient sounds</p>
+                        <h4>🌩️ Atmosphere</h4>
+                        <p>Thunder, wind, ambient sounds</p>
                     </div>
                     <div style="display: flex; gap: 20px; align-items: center;">
                         <label class="toggle-switch">
@@ -933,6 +1006,41 @@
     </div>
 
     <script>
+        // Toast Notification System
+        function showToast(message, type = 'info', duration = 3000) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            if (type === 'loading') {
+                const spinner = document.createElement('div');
+                spinner.className = 'toast-spinner';
+                toast.appendChild(spinner);
+                duration = 0; // Don't auto-remove loading toasts
+            }
+            
+            const text = document.createElement('span');
+            text.textContent = message;
+            toast.appendChild(text);
+            
+            document.body.appendChild(toast);
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
+            
+            return toast;
+        }
+        
+        function removeToast(toast) {
+            if (toast && toast.parentNode) {
+                toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }
+
         // Tab Switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1162,10 +1270,16 @@
                 const categorySelect = document.createElement('select');
                 categorySelect.id = 'category-' + result.id;
                 categorySelect.className = 'btn-small';
-                ['bed', 'texture', 'detail', 'environmental'].forEach(cat => {
+                const categories = [
+                    { value: 'bed', label: '🎵 Base Layer' },
+                    { value: 'texture', label: '🌊 Variation' },
+                    { value: 'detail', label: '💧 Accent' },
+                    { value: 'environmental', label: '🌩️ Atmosphere' }
+                ];
+                categories.forEach(cat => {
                     const option = document.createElement('option');
-                    option.value = cat;
-                    option.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+                    option.value = cat.value;
+                    option.textContent = cat.label;
                     categorySelect.appendChild(option);
                 });
                 
@@ -1183,8 +1297,9 @@
                 card.appendChild(actions);
                 grid.appendChild(card);
                 
-                // Load and draw waveform
-                loadAndDrawWaveform(result.previews['preview-hq-mp3'], canvas);
+                // Set up lazy loading for waveform
+                canvas.dataset.audioUrl = result.previews['preview-hq-mp3'];
+                waveformObserver.observe(canvas);
             });
         }
 
@@ -1195,8 +1310,33 @@
         // Cache for waveform audio buffers
         const waveformBuffers = new Map();
         
+        // Intersection Observer for lazy loading waveforms
+        const waveformObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const canvas = entry.target;
+                    const audioUrl = canvas.dataset.audioUrl;
+                    if (audioUrl && !canvas.dataset.loaded) {
+                        canvas.dataset.loaded = 'true';
+                        loadAndDrawWaveform(audioUrl, canvas);
+                    }
+                }
+            });
+        }, {
+            rootMargin: '50px' // Start loading slightly before visible
+        });
+        
         async function loadAndDrawWaveform(audioUrl, canvas) {
             try {
+                // Show loading placeholder
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Loading...', canvas.width / 2, canvas.height / 2);
+                
                 // Check cache first
                 if (waveformBuffers.has(audioUrl)) {
                     const audioBuffer = waveformBuffers.get(audioUrl);
@@ -1207,19 +1347,27 @@
                 const response = await fetch(audioUrl);
                 const arrayBuffer = await response.arrayBuffer();
                 
-                const audioBuffer = await sharedAudioContext.decodeAudioData(arrayBuffer);
+                // Use requestAnimationFrame for smooth rendering
+                requestAnimationFrame(async () => {
+                    const audioBuffer = await sharedAudioContext.decodeAudioData(arrayBuffer);
+                    
+                    // Cache the buffer
+                    waveformBuffers.set(audioUrl, audioBuffer);
+                    
+                    drawWaveform(audioBuffer, canvas);
+                });
                 
-                // Cache the buffer
-                waveformBuffers.set(audioUrl, audioBuffer);
-                
-                drawWaveform(audioBuffer, canvas);
-                return audioBuffer;
+                return null;
             } catch (error) {
                 console.error('Error loading waveform:', error);
-                // Draw placeholder on error
+                // Draw error placeholder
                 const ctx = canvas.getContext('2d');
                 ctx.fillStyle = '#1a1a2e';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('⚠️ Error', canvas.width / 2, canvas.height / 2);
             }
         }
 
@@ -1334,6 +1482,8 @@
         async function downloadFreesound(soundId, name) {
             const category = document.getElementById(`category-${soundId}`).value;
             
+            const loadingToast = showToast('Downloading...', 'loading');
+            
             try {
                 const response = await fetch('/api/freesound/download', {
                     method: 'POST',
@@ -1341,15 +1491,18 @@
                     body: JSON.stringify({ sound_id: soundId, category, name })
                 });
                 
+                removeToast(loadingToast);
+                
                 if (response.ok) {
-                    alert('Download complete!');
+                    showToast('Download complete!', 'success');
                     loadSamples();
                 } else {
                     const error = await response.json();
-                    alert('Download failed: ' + (error.error || 'Unknown error'));
+                    showToast('Download failed: ' + (error.error || 'Unknown error'), 'error', 5000);
                 }
             } catch (error) {
-                alert('Error: ' + error.message);
+                removeToast(loadingToast);
+                showToast('Error: ' + error.message, 'error', 5000);
             }
         }
 
@@ -1743,11 +1896,25 @@
 
         function updateSliders() {
             if (selectedPoint) {
-                document.getElementById('intensitySlider').value = selectedPoint.intensity * 100;
-                document.getElementById('intensityValue').textContent = `${Math.round(selectedPoint.intensity * 100)}%`;
+                const intensity = selectedPoint.intensity || 0.5;
+                const dropDensity = selectedPoint.drop_density || 0.5;
                 
-                document.getElementById('densitySlider').value = (selectedPoint.drop_density || 0.5) * 100;
-                document.getElementById('densityValue').textContent = `${Math.round((selectedPoint.drop_density || 0.5) * 100)}%`;
+                // Ensure values are valid numbers
+                const intensityValue = Math.max(0, Math.min(1, intensity)) * 100;
+                const densityValue = Math.max(0, Math.min(1, dropDensity)) * 100;
+                
+                document.getElementById('intensitySlider').value = intensityValue;
+                document.getElementById('intensityValue').textContent = `${Math.round(intensityValue)}%`;
+                
+                document.getElementById('densitySlider').value = densityValue;
+                document.getElementById('densityValue').textContent = `${Math.round(densityValue)}%`;
+            } else {
+                // No point selected - show default values
+                document.getElementById('intensitySlider').value = 50;
+                document.getElementById('intensityValue').textContent = '50%';
+                
+                document.getElementById('densitySlider').value = 50;
+                document.getElementById('densityValue').textContent = '50%';
             }
         }
 
