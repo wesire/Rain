@@ -140,18 +140,25 @@ def generate_rain_video_frames(output_dir, duration_seconds, fps=30, width=1920,
         print(f"Saved static frame to {output_dir}")
         
     else:  # animated
-        # Determine number of drops per frame
+        # Determine drop range based on intensity
         if intensity == 'light':
-            drops_per_frame = np.random.randint(30, 60)
+            drop_range = (30, 60)
         elif intensity == 'heavy':
-            drops_per_frame = np.random.randint(150, 250)
+            drop_range = (150, 250)
         else:  # medium
-            drops_per_frame = np.random.randint(80, 120)
+            drop_range = (80, 120)
         
-        print(f"Generating animated frames with {drops_per_frame} drops per frame...")
+        print(f"Generating animated frames with {drop_range[0]}-{drop_range[1]} drops per frame...")
         
-        # Generate frames
-        for frame_num in tqdm(range(min(total_frames, 100)), desc="Generating frames"):
+        # Generate frames (limited to 100 for efficiency - can be looped in video creation)
+        # For 12-hour videos, generating all frames would require ~1.3 million frames
+        # Instead, we generate a smaller set that can be repeated or used as a pattern
+        num_frames_to_generate = min(total_frames, 100)
+        
+        for frame_num in tqdm(range(num_frames_to_generate), desc="Generating frames"):
+            # Vary number of drops per frame for natural animation
+            drops_per_frame = np.random.randint(drop_range[0], drop_range[1])
+            
             # Create frame with raindrops
             frame = background.copy()
             rain_layer = create_raindrop_frame(width, height, drops_per_frame, (0, 0, 0))
@@ -163,9 +170,11 @@ def generate_rain_video_frames(output_dir, duration_seconds, fps=30, width=1920,
             frame_path = os.path.join(output_dir, f'frame_{frame_num:04d}.png')
             frame.save(frame_path)
         
-        print(f"Generated frames saved to {output_dir}")
-        print("Note: For efficiency, only first 100 frames generated.")
-        print("For full video, the pattern will be repeated or you can generate more frames.")
+        print(f"Generated {num_frames_to_generate} frames saved to {output_dir}")
+        if num_frames_to_generate < total_frames:
+            print(f"Note: Generated {num_frames_to_generate} frames for efficiency.")
+            print("For static-style videos, use --style static instead.")
+            print("These frames can be looped or repeated in video creation.")
 
 
 def main():

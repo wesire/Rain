@@ -58,12 +58,12 @@ rain sounds, sleep sounds, rain for sleeping, white noise, gentle rain, rain sou
 
 **Title:**
 ```
-Heavy Rain Sounds for Sleeping - 10 Hours Rain & Thunder | Black Screen Deep Sleep
+Rain Sounds for Sleeping - 10 Hours Medium Rain | Black Screen Deep Sleep
 ```
 
 **Description:**
 ```
-🌧️⚡ 10 Hours of Medium Rain Sounds for Ultimate Relaxation
+🌧️ 10 Hours of Medium Rain Sounds for Ultimate Relaxation
 
 Immerse yourself in the soothing sounds of steady rainfall - perfect for deep sleep, study sessions, or peaceful relaxation. This natural white noise helps mask unwanted sounds and creates a peaceful environment.
 
@@ -104,14 +104,14 @@ rain sounds, sleep sounds, rain for sleeping, white noise, medium rain, rain sou
 
 **Title:**
 ```
-Heavy Rain & Thunder Sounds - 12 Hours for Sleeping | Thunderstorm Black Screen
+Heavy Rain Sounds - 12 Hours for Sleeping | Rainstorm Black Screen
 ```
 
 **Description:**
 ```
-🌧️⚡ 12 Hours of Heavy Rain and Thunder Sounds for Deep Sleep
+🌧️ 12 Hours of Heavy Rain Sounds for Deep Sleep
 
-Powerful rainstorm sounds with distant thunder - the ultimate sleep aid and noise blocker. This intense rain audio creates a peaceful cocoon of sound, perfect for sleeping through the entire night.
+Powerful rainstorm sounds - the ultimate sleep aid and noise blocker. This intense rain audio creates a peaceful cocoon of sound, perfect for sleeping through the entire night.
 
 ⏰ Perfect For:
 ✓ 12-hour overnight sleep
