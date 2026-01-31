@@ -109,8 +109,14 @@ def generate_rain_audio_variable(duration_seconds, intensity_timeline, sample_ra
         if not intensity_timeline:
             return 0.5  # default medium intensity
         
-        # Sort timeline by time
-        sorted_timeline = sorted(intensity_timeline, key=lambda x: x['time'])
+        # Sort timeline by time, filtering out invalid entries
+        sorted_timeline = sorted(
+            [p for p in intensity_timeline if p.get('time') is not None and p.get('intensity') is not None],
+            key=lambda x: x['time']
+        )
+        
+        if not sorted_timeline:
+            return 0.5  # default if no valid points
         
         # Find surrounding points
         if t <= sorted_timeline[0]['time']:
@@ -120,9 +126,13 @@ def generate_rain_audio_variable(duration_seconds, intensity_timeline, sample_ra
         
         # Linear interpolation between points
         for i in range(len(sorted_timeline) - 1):
-            if sorted_timeline[i]['time'] <= t <= sorted_timeline[i + 1]['time']:
-                t1, i1 = sorted_timeline[i]['time'], sorted_timeline[i]['intensity']
-                t2, i2 = sorted_timeline[i + 1]['time'], sorted_timeline[i + 1]['intensity']
+            t1, i1 = sorted_timeline[i]['time'], sorted_timeline[i]['intensity']
+            t2, i2 = sorted_timeline[i + 1]['time'], sorted_timeline[i + 1]['intensity']
+            
+            if t1 is None or t2 is None or i1 is None or i2 is None:
+                continue  # Skip invalid points
+                
+            if t1 <= t <= t2:
                 # Linear interpolation
                 alpha = (t - t1) / (t2 - t1) if t2 != t1 else 0
                 return i1 + alpha * (i2 - i1)
@@ -134,7 +144,14 @@ def generate_rain_audio_variable(duration_seconds, intensity_timeline, sample_ra
         if not intensity_timeline:
             return 0.5
         
-        sorted_timeline = sorted(intensity_timeline, key=lambda x: x['time'])
+        # Sort timeline by time, filtering out invalid entries
+        sorted_timeline = sorted(
+            [p for p in intensity_timeline if p.get('time') is not None],
+            key=lambda x: x['time']
+        )
+        
+        if not sorted_timeline:
+            return 0.5  # default if no valid points
         
         if t <= sorted_timeline[0]['time']:
             return sorted_timeline[0].get('drop_density', 0.5)
@@ -142,9 +159,15 @@ def generate_rain_audio_variable(duration_seconds, intensity_timeline, sample_ra
             return sorted_timeline[-1].get('drop_density', 0.5)
         
         for i in range(len(sorted_timeline) - 1):
-            if sorted_timeline[i]['time'] <= t <= sorted_timeline[i + 1]['time']:
-                t1, d1 = sorted_timeline[i]['time'], sorted_timeline[i].get('drop_density', 0.5)
-                t2, d2 = sorted_timeline[i + 1]['time'], sorted_timeline[i + 1].get('drop_density', 0.5)
+            t1 = sorted_timeline[i]['time']
+            t2 = sorted_timeline[i + 1]['time']
+            
+            if t1 is None or t2 is None:
+                continue  # Skip invalid points
+                
+            if t1 <= t <= t2:
+                d1 = sorted_timeline[i].get('drop_density', 0.5)
+                d2 = sorted_timeline[i + 1].get('drop_density', 0.5)
                 alpha = (t - t1) / (t2 - t1) if t2 != t1 else 0
                 return d1 + alpha * (d2 - d1)
         
