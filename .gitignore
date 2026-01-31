@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Generated content
+*.wav
+*.mp4
+*.avi
+*.mov
+frames/
+*.png
+test_*.mp4
+test_*.wav
+rain_audio.wav
+background.png
+test_background.png
+test_audio.wav
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+/tmp/
+*.tmp
