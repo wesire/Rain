@@ -613,8 +613,9 @@ def api_freesound_download():
         success = client.download_sound(sound_id, output_path, use_preview=True)
         
         if success:
-            # Apply normalization to -3dB
-            normalize_result = normalize_audio(output_path, target_db=-3.0)
+            # Apply normalization using configured target level
+            target_db = config.DEFAULT_DOWNLOAD_NORMALIZATION_DB
+            normalize_result = normalize_audio(output_path, target_db=target_db)
             
             if normalize_result:
                 original_db, target_db = normalize_result

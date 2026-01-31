@@ -878,6 +878,50 @@
                     </div>
                 </div>
 
+                <div class="config-item" style="margin-top: 40px; border-top: 2px solid rgba(255,255,255,0.1); padding-top: 30px;">
+                    <div class="config-label">
+                        <h3>🔊 Audio Normalization Settings</h3>
+                        <p>Control volume normalization for downloads and final output</p>
+                    </div>
+                </div>
+
+                <div class="config-item">
+                    <div class="config-label">
+                        <h4>Auto-Normalize on Download</h4>
+                        <p>Automatically normalize samples when downloading from Freesound</p>
+                    </div>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoNormalizeEnabled" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="config-item">
+                    <div class="config-label">
+                        <h4>Download Normalization Level</h4>
+                        <p>Target peak level for downloaded samples (default: -3dB, leaves headroom)</p>
+                    </div>
+                    <div class="volume-control">
+                        <span>Target:</span>
+                        <input type="range" id="downloadNormLevel" min="-20" max="0" value="-3" step="0.5">
+                        <span class="volume-value" id="downloadNormLevelValue">-3.0 dB</span>
+                    </div>
+                </div>
+
+                <div class="config-item">
+                    <div class="config-label">
+                        <h4>Final Output Normalization</h4>
+                        <p>Target peak level for final video output (default: -1dB for YouTube)</p>
+                    </div>
+                    <div class="volume-control">
+                        <span>Target:</span>
+                        <input type="range" id="outputNormLevel" min="-20" max="0" value="-1" step="0.5">
+                        <span class="volume-value" id="outputNormLevelValue">-1.0 dB</span>
+                    </div>
+                </div>
+
                 <div class="button-group" style="margin-top: 20px;">
                     <button class="btn-primary" id="saveConfigBtn">Save Configuration</button>
                     <button class="btn-secondary" id="loadConfigBtn">Load Configuration</button>
@@ -1371,6 +1415,15 @@
                     document.getElementById('environmentalFrequency').value = config.environmental.frequency * 100;
                     document.getElementById('environmentalFrequencyValue').textContent = `${Math.round(config.environmental.frequency * 100)}%`;
                 }
+                
+                // Load normalization settings
+                if (config.normalization) {
+                    document.getElementById('autoNormalizeEnabled').checked = config.normalization.auto_normalize;
+                    document.getElementById('downloadNormLevel').value = config.normalization.download_target_db;
+                    document.getElementById('downloadNormLevelValue').textContent = config.normalization.download_target_db.toFixed(1) + ' dB';
+                    document.getElementById('outputNormLevel').value = config.normalization.output_target_db;
+                    document.getElementById('outputNormLevelValue').textContent = config.normalization.output_target_db.toFixed(1) + ' dB';
+                }
             } catch (error) {
                 console.error('Error loading config:', error);
             }
@@ -1435,6 +1488,19 @@
             freqSlider.addEventListener('input', (e) => {
                 freqValue.textContent = e.target.value + '%';
             });
+        });
+
+        // Normalization slider updates
+        const downloadNormSlider = document.getElementById('downloadNormLevel');
+        const downloadNormValue = document.getElementById('downloadNormLevelValue');
+        downloadNormSlider.addEventListener('input', (e) => {
+            downloadNormValue.textContent = parseFloat(e.target.value).toFixed(1) + ' dB';
+        });
+
+        const outputNormSlider = document.getElementById('outputNormLevel');
+        const outputNormValue = document.getElementById('outputNormLevelValue');
+        outputNormSlider.addEventListener('input', (e) => {
+            outputNormValue.textContent = parseFloat(e.target.value).toFixed(1) + ' dB';
         });
 
         // Timeline state

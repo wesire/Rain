@@ -23,6 +23,11 @@ ENVIRONMENTAL_DIR = SAMPLES_DIR / 'environmental'
 DEFAULT_SAMPLE_RATE = 44100
 DEFAULT_BIT_DEPTH = 16
 
+# Normalization Settings
+DEFAULT_DOWNLOAD_NORMALIZATION_DB = -3.0  # Target peak for downloads (leaves headroom)
+DEFAULT_OUTPUT_NORMALIZATION_DB = -1.0    # Target peak for final output (YouTube standard)
+AUTO_NORMALIZE_ENABLED = True             # Auto-normalize downloads by default
+
 # Layer Configuration Defaults
 DEFAULT_LAYER_VOLUMES = {
     'bed': 0.7,
@@ -64,5 +69,10 @@ def get_config():
         'crossfade_duration': DEFAULT_CROSSFADE_DURATION,
         'detail_frequency': DEFAULT_DETAIL_FREQUENCY,
         'environmental_frequency': DEFAULT_ENVIRONMENTAL_FREQUENCY,
-        'sample_rate': DEFAULT_SAMPLE_RATE
+        'sample_rate': DEFAULT_SAMPLE_RATE,
+        'normalization': {
+            'auto_normalize': AUTO_NORMALIZE_ENABLED,
+            'download_target_db': DEFAULT_DOWNLOAD_NORMALIZATION_DB,
+            'output_target_db': DEFAULT_OUTPUT_NORMALIZATION_DB
+        }
     }
