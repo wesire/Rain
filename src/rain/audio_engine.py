@@ -520,7 +520,7 @@ class RainAudioEngine:
             drop_samples = int(drop_duration * sr)
             
             # Filtered noise
-            noise = self.rng.randn(drop_samples)
+            noise = self.rng.standard_normal(drop_samples)
             freq_low = self.rng.uniform(1000, 3000)
             freq_high = self.rng.uniform(4000, 8000)
             nyquist = sr / 2

@@ -98,10 +98,14 @@ def apply_limiter(audio: np.ndarray, ceiling_db: float = -1.0,
     """
     ceiling_linear = 10 ** (ceiling_db / 20)
     
-    # Simple soft clipper with tanh
-    # Scale so that ceiling_linear maps to tanh(1) ≈ 0.76
-    scale = 1.0 / ceiling_linear
-    audio_limited = np.tanh(audio * scale) / np.tanh(1.0) * ceiling_linear
+    # Soft clipper with tanh for smooth limiting
+    # Scale so that ceiling_linear maps approximately to the ceiling
+    # We use a gentler scale to prevent overshooting
+    scale = 0.8 / ceiling_linear  # Reduced scale factor
+    audio_limited = np.tanh(audio * scale) / np.tanh(scale) * ceiling_linear
+    
+    # Hard limit as final safety (shouldn't be needed with proper tanh scaling)
+    audio_limited = np.clip(audio_limited, -ceiling_linear, ceiling_linear)
     
     return audio_limited
 
