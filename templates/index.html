@@ -1081,8 +1081,9 @@
                 
                 const playBtn = document.createElement('button');
                 playBtn.className = 'btn-secondary btn-small';
+                playBtn.id = 'play-btn-' + result.id;
                 playBtn.textContent = '▶️';
-                playBtn.onclick = () => previewFreesound(result.previews['preview-hq-mp3']);
+                playBtn.onclick = () => togglePlayPause(result.id, result.previews['preview-hq-mp3'], playBtn);
                 
                 const categorySelect = document.createElement('select');
                 categorySelect.id = 'category-' + result.id;
@@ -1109,12 +1110,34 @@
             });
         }
 
-        function previewFreesound(url) {
-            if (currentAudio) {
-                currentAudio.pause();
+        let currentlyPlaying = null;
+
+        function togglePlayPause(soundId, previewUrl, button) {
+            if (currentlyPlaying && currentlyPlaying.soundId === soundId) {
+                // Pause current
+                currentlyPlaying.audio.pause();
+                currentlyPlaying = null;
+                button.textContent = '▶️';
+            } else {
+                // Stop any existing
+                if (currentlyPlaying) {
+                    currentlyPlaying.audio.pause();
+                    const oldButton = document.getElementById('play-btn-' + currentlyPlaying.soundId);
+                    if (oldButton) {
+                        oldButton.textContent = '▶️';
+                    }
+                }
+                // Play new
+                const audio = new Audio(previewUrl);
+                audio.play();
+                currentlyPlaying = { soundId, audio };
+                button.textContent = '⏸️';
+                
+                audio.onended = () => {
+                    currentlyPlaying = null;
+                    button.textContent = '▶️';
+                };
             }
-            currentAudio = new Audio(url);
-            currentAudio.play();
         }
 
         async function downloadFreesound(soundId, name) {
