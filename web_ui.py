@@ -22,6 +22,8 @@ import config
 from freesound_client import FreesoundClient
 from audio_stitcher import MultiLayerMixer
 import shutil
+import librosa
+import soundfile as sf
 
 app = Flask(__name__)
 
@@ -36,6 +38,40 @@ generation_status = {
 
 # Thread cancellation event
 cancel_event = threading.Event()
+
+def normalize_audio(audio_path, target_db=-3.0):
+    """
+    Normalize audio file to target dB level.
+    
+    Args:
+        audio_path: Path to audio file
+        target_db: Target peak level in dB (default: -3.0)
+        
+    Returns:
+        Tuple of (original_peak_db, target_db) or None if error
+    """
+    try:
+        # Load audio
+        y, sr = librosa.load(str(audio_path), sr=None, mono=True)
+        
+        # Calculate current peak
+        peak = np.max(np.abs(y))
+        current_db = 20 * np.log10(peak) if peak > 0 else -np.inf
+        
+        # Calculate gain needed
+        target_linear = 10 ** (target_db / 20)
+        gain = target_linear / peak if peak > 0 else 1.0
+        
+        # Apply gain
+        y_normalized = y * gain
+        
+        # Save normalized audio back
+        sf.write(str(audio_path), y_normalized, sr)
+        
+        return current_db, target_db
+    except Exception as e:
+        print(f"Error normalizing audio: {e}")
+        return None
 
 def generate_rain_audio_variable(duration_seconds, intensity_timeline, sample_rate=44100, output_file='rain.wav'):
     """
@@ -577,10 +613,20 @@ def api_freesound_download():
         success = client.download_sound(sound_id, output_path, use_preview=True)
         
         if success:
+            # Apply normalization to -3dB
+            normalize_result = normalize_audio(output_path, target_db=-3.0)
+            
+            if normalize_result:
+                original_db, target_db = normalize_result
+                print(f"Normalized audio from {original_db:.2f}dB to {target_db:.2f}dB")
+            else:
+                print("Warning: Audio normalization failed, file saved without normalization")
+            
             return jsonify({
                 'status': 'success',
                 'filename': filename,
-                'category': category
+                'category': category,
+                'normalized': normalize_result is not None
             })
         else:
             return jsonify({'error': 'Download failed'}), 500
