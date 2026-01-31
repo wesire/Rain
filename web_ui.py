@@ -155,7 +155,8 @@ def generate_rain_audio_variable(duration_seconds, intensity_timeline, sample_ra
     
     # Add subtle background noise for continuous ambiance
     print("Adding ambient background...")
-    background_noise = np.random.randn(total_samples) * 0.01
+    BACKGROUND_NOISE_AMPLITUDE = 0.01
+    background_noise = np.random.randn(total_samples) * BACKGROUND_NOISE_AMPLITUDE
     b, a = signal.butter(4, 500 / (sample_rate / 2), btype='low')
     background_noise = signal.filtfilt(b, a, background_noise)
     audio += background_noise
@@ -292,7 +293,7 @@ def api_generate():
         return jsonify({'error': 'Generation already in progress'}), 400
     
     data = request.json
-    duration_hours = data.get('duration', 0.1)  # Default 6 minutes for testing
+    duration_hours = data.get('duration', 0.1)  # Default 0.1 hours (6 minutes) for testing
     intensity_timeline = data.get('timeline', [])
     output_file = data.get('output', 'rain_video.mp4')
     
