@@ -878,6 +878,50 @@
                     </div>
                 </div>
 
+                <div class="config-item" style="margin-top: 40px; border-top: 2px solid rgba(255,255,255,0.1); padding-top: 30px;">
+                    <div class="config-label">
+                        <h3>🔊 Audio Normalization Settings</h3>
+                        <p>Control volume normalization for downloads and final output</p>
+                    </div>
+                </div>
+
+                <div class="config-item">
+                    <div class="config-label">
+                        <h4>Auto-Normalize on Download</h4>
+                        <p>Automatically normalize samples when downloading from Freesound</p>
+                    </div>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoNormalizeEnabled" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="config-item">
+                    <div class="config-label">
+                        <h4>Download Normalization Level</h4>
+                        <p>Target peak level for downloaded samples (default: -3dB, leaves headroom)</p>
+                    </div>
+                    <div class="volume-control">
+                        <span>Target:</span>
+                        <input type="range" id="downloadNormLevel" min="-20" max="0" value="-3" step="0.5">
+                        <span class="volume-value" id="downloadNormLevelValue">-3.0 dB</span>
+                    </div>
+                </div>
+
+                <div class="config-item">
+                    <div class="config-label">
+                        <h4>Final Output Normalization</h4>
+                        <p>Target peak level for final video output (default: -1dB for YouTube)</p>
+                    </div>
+                    <div class="volume-control">
+                        <span>Target:</span>
+                        <input type="range" id="outputNormLevel" min="-20" max="0" value="-1" step="0.5">
+                        <span class="volume-value" id="outputNormLevelValue">-1.0 dB</span>
+                    </div>
+                </div>
+
                 <div class="button-group" style="margin-top: 20px;">
                     <button class="btn-primary" id="saveConfigBtn">Save Configuration</button>
                     <button class="btn-secondary" id="loadConfigBtn">Load Configuration</button>
@@ -906,6 +950,12 @@
 
         // Sample Library Management
         const categories = ['bed', 'texture', 'detail', 'environmental'];
+        const categoryMap = {
+            'bed': 'beds',
+            'texture': 'textures',
+            'detail': 'details',
+            'environmental': 'environmental'
+        };
         
         async function loadSamples() {
             try {
@@ -916,7 +966,9 @@
                     const list = document.getElementById(category + 'List');
                     list.innerHTML = '';
                     
-                    const samples = data[category] || [];
+                    // Use plural form to access backend data
+                    const backendCategory = categoryMap[category];
+                    const samples = data[backendCategory] || [];
                     samples.forEach(sample => {
                         const filename = typeof sample === 'string' ? sample : sample.name;
                         const item = document.createElement('div');
@@ -1068,13 +1120,44 @@
                 header.appendChild(name);
                 header.appendChild(duration);
                 
+                // Add waveform canvas
+                const waveformContainer = document.createElement('div');
+                waveformContainer.style.position = 'relative';
+                waveformContainer.style.width = '100%';
+                waveformContainer.style.height = '60px';
+                waveformContainer.style.marginTop = '10px';
+                waveformContainer.style.marginBottom = '10px';
+                waveformContainer.style.cursor = 'pointer';
+                
+                const canvas = document.createElement('canvas');
+                canvas.id = 'waveform-' + result.id;
+                canvas.width = 300;
+                canvas.height = 60;
+                canvas.style.width = '100%';
+                canvas.style.height = '60px';
+                canvas.style.borderRadius = '5px';
+                canvas.style.background = '#1a1a2e';
+                
+                waveformContainer.appendChild(canvas);
+                
+                // Add click handler for seeking
+                canvas.onclick = (e) => {
+                    if (currentlyPlaying && currentlyPlaying.soundId === result.id) {
+                        const rect = canvas.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const percent = x / rect.width;
+                        currentlyPlaying.audio.currentTime = currentlyPlaying.audio.duration * percent;
+                    }
+                };
+                
                 const actions = document.createElement('div');
                 actions.className = 'result-actions';
                 
                 const playBtn = document.createElement('button');
                 playBtn.className = 'btn-secondary btn-small';
+                playBtn.id = 'play-btn-' + result.id;
                 playBtn.textContent = '▶️';
-                playBtn.onclick = () => previewFreesound(result.previews['preview-hq-mp3']);
+                playBtn.onclick = () => togglePlayPause(result.id, result.previews['preview-hq-mp3'], playBtn, canvas);
                 
                 const categorySelect = document.createElement('select');
                 categorySelect.id = 'category-' + result.id;
@@ -1096,17 +1179,157 @@
                 actions.appendChild(downloadBtn);
                 
                 card.appendChild(header);
+                card.appendChild(waveformContainer);
                 card.appendChild(actions);
                 grid.appendChild(card);
+                
+                // Load and draw waveform
+                loadAndDrawWaveform(result.previews['preview-hq-mp3'], canvas);
             });
         }
 
-        function previewFreesound(url) {
-            if (currentAudio) {
-                currentAudio.pause();
+        // Waveform visualization functions
+        // Shared AudioContext to avoid resource limits
+        const sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Cache for waveform audio buffers
+        const waveformBuffers = new Map();
+        
+        async function loadAndDrawWaveform(audioUrl, canvas) {
+            try {
+                // Check cache first
+                if (waveformBuffers.has(audioUrl)) {
+                    const audioBuffer = waveformBuffers.get(audioUrl);
+                    drawWaveform(audioBuffer, canvas);
+                    return audioBuffer;
+                }
+                
+                const response = await fetch(audioUrl);
+                const arrayBuffer = await response.arrayBuffer();
+                
+                const audioBuffer = await sharedAudioContext.decodeAudioData(arrayBuffer);
+                
+                // Cache the buffer
+                waveformBuffers.set(audioUrl, audioBuffer);
+                
+                drawWaveform(audioBuffer, canvas);
+                return audioBuffer;
+            } catch (error) {
+                console.error('Error loading waveform:', error);
+                // Draw placeholder on error
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
-            currentAudio = new Audio(url);
-            currentAudio.play();
+        }
+
+        function drawWaveform(audioBuffer, canvas) {
+            const ctx = canvas.getContext('2d');
+            const data = audioBuffer.getChannelData(0);
+            const step = Math.ceil(data.length / canvas.width);
+            const amp = canvas.height / 2;
+            
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#f59e0b'; // Orange like Freesound
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            
+            for (let i = 0; i < canvas.width; i++) {
+                let min = 1.0, max = -1.0;
+                for (let j = 0; j < step; j++) {
+                    const datum = data[(i * step) + j];
+                    if (datum < min) min = datum;
+                    if (datum > max) max = datum;
+                }
+                ctx.moveTo(i, (1 + min) * amp);
+                ctx.lineTo(i, (1 + max) * amp);
+            }
+            
+            ctx.stroke();
+        }
+
+        function updateWaveformProgress(canvas, progress) {
+            // Redraw the waveform with progress indicator
+            const ctx = canvas.getContext('2d');
+            const progressX = canvas.width * progress;
+            
+            // Draw semi-transparent overlay for played portion
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+            ctx.fillRect(0, 0, progressX, canvas.height);
+            
+            // Draw progress line
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(progressX, 0);
+            ctx.lineTo(progressX, canvas.height);
+            ctx.stroke();
+        }
+
+        let currentlyPlaying = null;
+
+        function togglePlayPause(soundId, previewUrl, button, canvas) {
+            if (currentlyPlaying && currentlyPlaying.soundId === soundId) {
+                // Pause current
+                currentlyPlaying.audio.pause();
+                if (currentlyPlaying.progressInterval) {
+                    clearInterval(currentlyPlaying.progressInterval);
+                }
+                currentlyPlaying = null;
+                button.textContent = '▶️';
+            } else {
+                // Stop any existing
+                if (currentlyPlaying) {
+                    currentlyPlaying.audio.pause();
+                    if (currentlyPlaying.progressInterval) {
+                        clearInterval(currentlyPlaying.progressInterval);
+                    }
+                    const oldButton = document.getElementById('play-btn-' + currentlyPlaying.soundId);
+                    if (oldButton) {
+                        oldButton.textContent = '▶️';
+                    }
+                    // Redraw old waveform without progress
+                    const oldCanvas = document.getElementById('waveform-' + currentlyPlaying.soundId);
+                    if (oldCanvas && currentlyPlaying.audioBuffer) {
+                        drawWaveform(currentlyPlaying.audioBuffer, oldCanvas);
+                    }
+                }
+                // Play new
+                const audio = new Audio(previewUrl);
+                audio.play();
+                
+                // Load waveform and get audio buffer (uses cache if available)
+                loadAndDrawWaveform(previewUrl, canvas).then(audioBuffer => {
+                    // Update progress indicator
+                    const progressInterval = setInterval(() => {
+                        if (audio.duration && audioBuffer) {
+                            const progress = audio.currentTime / audio.duration;
+                            drawWaveform(audioBuffer, canvas);
+                            updateWaveformProgress(canvas, progress);
+                        }
+                    }, 100);
+                    
+                    currentlyPlaying.progressInterval = progressInterval;
+                    currentlyPlaying.audioBuffer = audioBuffer;
+                }).catch(error => console.error('Error loading audio buffer:', error));
+                
+                currentlyPlaying = { soundId, audio, progressInterval: null, audioBuffer: null };
+                button.textContent = '⏸️';
+                
+                audio.onended = () => {
+                    if (currentlyPlaying && currentlyPlaying.progressInterval) {
+                        clearInterval(currentlyPlaying.progressInterval);
+                    }
+                    if (currentlyPlaying && currentlyPlaying.audioBuffer) {
+                        drawWaveform(currentlyPlaying.audioBuffer, canvas);
+                    }
+                    currentlyPlaying = null;
+                    button.textContent = '▶️';
+                };
+                };
+            }
         }
 
         async function downloadFreesound(soundId, name) {
@@ -1198,6 +1421,15 @@
                     document.getElementById('environmentalFrequency').value = config.environmental.frequency * 100;
                     document.getElementById('environmentalFrequencyValue').textContent = `${Math.round(config.environmental.frequency * 100)}%`;
                 }
+                
+                // Load normalization settings
+                if (config.normalization) {
+                    document.getElementById('autoNormalizeEnabled').checked = config.normalization.auto_normalize;
+                    document.getElementById('downloadNormLevel').value = config.normalization.download_target_db;
+                    document.getElementById('downloadNormLevelValue').textContent = config.normalization.download_target_db.toFixed(1) + ' dB';
+                    document.getElementById('outputNormLevel').value = config.normalization.output_target_db;
+                    document.getElementById('outputNormLevelValue').textContent = config.normalization.output_target_db.toFixed(1) + ' dB';
+                }
             } catch (error) {
                 console.error('Error loading config:', error);
             }
@@ -1262,6 +1494,19 @@
             freqSlider.addEventListener('input', (e) => {
                 freqValue.textContent = e.target.value + '%';
             });
+        });
+
+        // Normalization slider updates
+        const downloadNormSlider = document.getElementById('downloadNormLevel');
+        const downloadNormValue = document.getElementById('downloadNormLevelValue');
+        downloadNormSlider.addEventListener('input', (e) => {
+            downloadNormValue.textContent = parseFloat(e.target.value).toFixed(1) + ' dB';
+        });
+
+        const outputNormSlider = document.getElementById('outputNormLevel');
+        const outputNormValue = document.getElementById('outputNormLevelValue');
+        outputNormSlider.addEventListener('input', (e) => {
+            outputNormValue.textContent = parseFloat(e.target.value).toFixed(1) + ' dB';
         });
 
         // Timeline state
