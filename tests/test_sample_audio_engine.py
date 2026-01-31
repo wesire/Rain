@@ -70,7 +70,8 @@ def test_crossfade_continuity():
     # 2*pi*440/48000 * amplitude ≈ 0.057 for amplitude 1.0
     # Our amplitude is 0.3, so max expected is about 0.017
     # With crossfade, this shouldn't increase dramatically
-    assert max_diff < 0.1, f"Crossfade has discontinuity: max_diff={max_diff}"
+    MAX_DIFF_THRESHOLD = 0.1  # Maximum acceptable sample-to-sample difference
+    assert max_diff < MAX_DIFF_THRESHOLD, f"Crossfade has discontinuity: max_diff={max_diff}"
     
     print(f"✓ Crossfade continuity test passed (max diff: {max_diff:.6f})")
 
@@ -86,9 +87,10 @@ def test_peak_below_ceiling():
     if peak > ceiling:
         audio = audio * (ceiling / peak)
     
-    # Verify
+    # Verify with small tolerance for floating point arithmetic
+    PEAK_TOLERANCE_FACTOR = 1.01  # 1% tolerance for floating point errors
     final_peak = np.max(np.abs(audio))
-    assert final_peak <= ceiling * 1.01, f"Peak {final_peak} exceeds ceiling {ceiling}"
+    assert final_peak <= ceiling * PEAK_TOLERANCE_FACTOR, f"Peak {final_peak} exceeds ceiling {ceiling}"
     
     peak_db = 20 * np.log10(final_peak)
     print(f"✓ Peak limiting test passed (peak: {peak_db:.1f} dBFS)")
@@ -140,8 +142,10 @@ def test_equal_power_crossfade_energy():
     
     # Crossfade energy should be within reasonable range of average
     # For random signals, we allow more variation
+    MIN_ENERGY_RATIO = 0.5  # Minimum acceptable energy ratio
+    MAX_ENERGY_RATIO = 2.0  # Maximum acceptable energy ratio
     ratio = crossfade_energy / avg_energy if avg_energy > 0 else 1.0
-    assert 0.5 < ratio < 2.0, f"Crossfade energy ratio {ratio} out of range"
+    assert MIN_ENERGY_RATIO < ratio < MAX_ENERGY_RATIO, f"Crossfade energy ratio {ratio} out of range"
     
     print(f"✓ Equal-power crossfade energy test passed (ratio: {ratio:.3f})")
 

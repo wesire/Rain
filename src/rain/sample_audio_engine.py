@@ -166,7 +166,7 @@ class SampleBasedAudioEngine:
         
         try:
             audio, sr = sf.read(bed_file, start=start_sample, frames=num_samples, dtype='float32')
-        except Exception as e:
+        except (RuntimeError, ValueError) as e:
             # If soundfile fails, try librosa
             import librosa
             audio, sr = librosa.load(bed_file, sr=None, offset=start_offset, 
@@ -249,7 +249,7 @@ class SampleBasedAudioEngine:
             
             try:
                 detail_audio, sr = sf.read(detail_file, dtype='float32')
-            except:
+            except (RuntimeError, ValueError, OSError):
                 # Skip if can't read
                 continue
             
@@ -334,7 +334,7 @@ class SampleBasedAudioEngine:
         
         try:
             thunder_audio, sr = sf.read(thunder_file, dtype='float32')
-        except:
+        except (RuntimeError, ValueError, OSError):
             return chunk  # Skip if can't read
         
         # Resample and stereo
@@ -375,7 +375,9 @@ class SampleBasedAudioEngine:
         
         # Add to chunk
         if len(thunder_audio) <= len(chunk):
-            pos = self.rng.integers(0, max(1, len(chunk) - len(thunder_audio) + 1))
+            # Calculate safe position to place thunder
+            max_start_pos = len(chunk) - len(thunder_audio)
+            pos = self.rng.integers(0, max(1, max_start_pos + 1))
             end_pos = min(pos + len(thunder_audio), len(chunk))
             chunk[pos:end_pos] += thunder_audio[:end_pos - pos]
         
