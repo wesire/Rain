@@ -1076,6 +1076,36 @@
                 header.appendChild(name);
                 header.appendChild(duration);
                 
+                // Add waveform canvas
+                const waveformContainer = document.createElement('div');
+                waveformContainer.style.position = 'relative';
+                waveformContainer.style.width = '100%';
+                waveformContainer.style.height = '60px';
+                waveformContainer.style.marginTop = '10px';
+                waveformContainer.style.marginBottom = '10px';
+                waveformContainer.style.cursor = 'pointer';
+                
+                const canvas = document.createElement('canvas');
+                canvas.id = 'waveform-' + result.id;
+                canvas.width = 300;
+                canvas.height = 60;
+                canvas.style.width = '100%';
+                canvas.style.height = '60px';
+                canvas.style.borderRadius = '5px';
+                canvas.style.background = '#1a1a2e';
+                
+                waveformContainer.appendChild(canvas);
+                
+                // Add click handler for seeking
+                canvas.onclick = (e) => {
+                    if (currentlyPlaying && currentlyPlaying.soundId === result.id) {
+                        const rect = canvas.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const percent = x / rect.width;
+                        currentlyPlaying.audio.currentTime = currentlyPlaying.audio.duration * percent;
+                    }
+                };
+                
                 const actions = document.createElement('div');
                 actions.className = 'result-actions';
                 
@@ -1083,7 +1113,7 @@
                 playBtn.className = 'btn-secondary btn-small';
                 playBtn.id = 'play-btn-' + result.id;
                 playBtn.textContent = '▶️';
-                playBtn.onclick = () => togglePlayPause(result.id, result.previews['preview-hq-mp3'], playBtn);
+                playBtn.onclick = () => togglePlayPause(result.id, result.previews['preview-hq-mp3'], playBtn, canvas);
                 
                 const categorySelect = document.createElement('select');
                 categorySelect.id = 'category-' + result.id;
@@ -1105,37 +1135,149 @@
                 actions.appendChild(downloadBtn);
                 
                 card.appendChild(header);
+                card.appendChild(waveformContainer);
                 card.appendChild(actions);
                 grid.appendChild(card);
+                
+                // Load and draw waveform
+                loadAndDrawWaveform(result.previews['preview-hq-mp3'], canvas);
             });
+        }
+
+        // Waveform visualization functions
+        async function loadAndDrawWaveform(audioUrl, canvas) {
+            try {
+                const response = await fetch(audioUrl);
+                const arrayBuffer = await response.arrayBuffer();
+                
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                drawWaveform(audioBuffer, canvas);
+            } catch (error) {
+                console.error('Error loading waveform:', error);
+                // Draw placeholder on error
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function drawWaveform(audioBuffer, canvas) {
+            const ctx = canvas.getContext('2d');
+            const data = audioBuffer.getChannelData(0);
+            const step = Math.ceil(data.length / canvas.width);
+            const amp = canvas.height / 2;
+            
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#f59e0b'; // Orange like Freesound
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            
+            for (let i = 0; i < canvas.width; i++) {
+                let min = 1.0, max = -1.0;
+                for (let j = 0; j < step; j++) {
+                    const datum = data[(i * step) + j];
+                    if (datum < min) min = datum;
+                    if (datum > max) max = datum;
+                }
+                ctx.moveTo(i, (1 + min) * amp);
+                ctx.lineTo(i, (1 + max) * amp);
+            }
+            
+            ctx.stroke();
+        }
+
+        function updateWaveformProgress(canvas, progress) {
+            // Redraw the waveform with progress indicator
+            const ctx = canvas.getContext('2d');
+            const progressX = canvas.width * progress;
+            
+            // Draw semi-transparent overlay for played portion
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+            ctx.fillRect(0, 0, progressX, canvas.height);
+            
+            // Draw progress line
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(progressX, 0);
+            ctx.lineTo(progressX, canvas.height);
+            ctx.stroke();
         }
 
         let currentlyPlaying = null;
 
-        function togglePlayPause(soundId, previewUrl, button) {
+        function togglePlayPause(soundId, previewUrl, button, canvas) {
             if (currentlyPlaying && currentlyPlaying.soundId === soundId) {
                 // Pause current
                 currentlyPlaying.audio.pause();
+                if (currentlyPlaying.progressInterval) {
+                    clearInterval(currentlyPlaying.progressInterval);
+                }
                 currentlyPlaying = null;
                 button.textContent = '▶️';
             } else {
                 // Stop any existing
                 if (currentlyPlaying) {
                     currentlyPlaying.audio.pause();
+                    if (currentlyPlaying.progressInterval) {
+                        clearInterval(currentlyPlaying.progressInterval);
+                    }
                     const oldButton = document.getElementById('play-btn-' + currentlyPlaying.soundId);
                     if (oldButton) {
                         oldButton.textContent = '▶️';
+                    }
+                    // Redraw old waveform without progress
+                    const oldCanvas = document.getElementById('waveform-' + currentlyPlaying.soundId);
+                    if (oldCanvas && currentlyPlaying.audioBuffer) {
+                        drawWaveform(currentlyPlaying.audioBuffer, oldCanvas);
                     }
                 }
                 // Play new
                 const audio = new Audio(previewUrl);
                 audio.play();
-                currentlyPlaying = { soundId, audio };
+                
+                // Store audio buffer for redrawing
+                let audioBuffer = null;
+                loadAndDrawWaveform(previewUrl, canvas).then(() => {
+                    // Get the audio buffer for progress updates
+                    fetch(previewUrl)
+                        .then(response => response.arrayBuffer())
+                        .then(arrayBuffer => {
+                            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                            return audioContext.decodeAudioData(arrayBuffer);
+                        })
+                        .then(buffer => {
+                            audioBuffer = buffer;
+                        })
+                        .catch(error => console.error('Error loading audio buffer:', error));
+                });
+                
+                // Update progress
+                const progressInterval = setInterval(() => {
+                    if (audio.duration && audioBuffer) {
+                        const progress = audio.currentTime / audio.duration;
+                        drawWaveform(audioBuffer, canvas);
+                        updateWaveformProgress(canvas, progress);
+                    }
+                }, 100);
+                
+                currentlyPlaying = { soundId, audio, progressInterval, audioBuffer };
                 button.textContent = '⏸️';
                 
                 audio.onended = () => {
+                    if (currentlyPlaying && currentlyPlaying.progressInterval) {
+                        clearInterval(currentlyPlaying.progressInterval);
+                    }
                     currentlyPlaying = null;
                     button.textContent = '▶️';
+                    // Redraw waveform without progress
+                    if (audioBuffer) {
+                        drawWaveform(audioBuffer, canvas);
+                    }
                 };
             }
         }
