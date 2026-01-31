@@ -13,6 +13,7 @@ import numpy as np
 import tempfile
 from pathlib import Path
 import sys
+from scipy import signal
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
@@ -39,12 +40,11 @@ def test_crossfade_continuity():
     audio2 = np.random.randn(samples) * 0.3
     
     # Apply gentle filtering to make them more rain-like
-    from scipy import signal as sp_signal
     nyquist = sr / 2
-    b1, a1 = sp_signal.butter(4, [1000/nyquist, 4000/nyquist], btype='band')
-    b2, a2 = sp_signal.butter(4, [1500/nyquist, 5000/nyquist], btype='band')
-    audio1 = sp_signal.filtfilt(b1, a1, audio1)
-    audio2 = sp_signal.filtfilt(b2, a2, audio2)
+    b1, a1 = signal.butter(4, [1000/nyquist, 4000/nyquist], btype='band')
+    b2, a2 = signal.butter(4, [1500/nyquist, 5000/nyquist], btype='band')
+    audio1 = signal.filtfilt(b1, a1, audio1)
+    audio2 = signal.filtfilt(b2, a2, audio2)
     
     # Make stereo
     audio1 = np.stack([audio1, audio1], axis=1).astype(np.float32)

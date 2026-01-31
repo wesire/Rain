@@ -252,7 +252,7 @@ def _draw_raindrops(frame: np.ndarray, raindrops: np.ndarray) -> None:
         # Blend line onto frame
         try:
             cv2.line(frame, (x1, y1), (x2, y2), color, 1, cv2.LINE_AA)
-        except:
+        except (ValueError, OverflowError):
             pass  # Skip if coordinates are invalid
 
 
