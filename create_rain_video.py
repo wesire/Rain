@@ -11,7 +11,7 @@ import subprocess
 from generate_rain_audio import generate_rain_audio
 from generate_rain_video import generate_rain_video_frames, create_static_background
 from PIL import Image
-from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
+from moviepy import ImageClip, AudioFileClip, concatenate_videoclips
 from tqdm import tqdm
 
 
