@@ -1,23 +1,38 @@
 # Rain Sound Video Generator 🌧️
 
-Generate high-quality, 12-hour rain sound videos perfect for YouTube channels focused on sleep, relaxation, and study content.
+Generate professional, sleep-grade rain sound videos perfect for YouTube channels focused on sleep, relaxation, and study content.
 
 ## Overview
 
-This project provides a complete solution for creating professional rain sound videos similar to popular sleep/relaxation content on YouTube. The generated videos feature:
+This project provides a complete solution for creating professional rain sound videos similar to popular sleep/relaxation content on YouTube. Version 2.0 features a completely rewritten audio engine with:
 
-- **Realistic rain audio**: Procedurally generated rain sounds with customizable intensity
-- **Calming visuals**: Dark, soothing backgrounds perfect for sleep videos
+- **Professional audio quality**: Sleep-grade audio with LUFS normalization, soft limiting, and seamless crossfades
+- **Asset-based or procedural**: Use your own rain recordings or high-quality procedural generation
+- **Memory efficient**: Stream-renders long videos without memory issues
+- **Calming visuals**: Procedural rain animation or custom background videos
 - **Long duration**: Generate videos up to 12 hours or more
-- **YouTube-ready**: Optimized output format for direct upload
+- **YouTube-ready**: Optimized output format with proper loudness standards
 
 ## Features
 
-- 🎵 **Procedural Rain Audio Generation**: Creates realistic rain sounds by layering thousands of individual raindrop sounds
-- 🎨 **Customizable Visuals**: Static backgrounds or animated rain effects
-- ⚙️ **Flexible Parameters**: Control intensity, duration, and style
-- 🚀 **Easy to Use**: Simple command-line interface
-- 📦 **Standalone**: No external audio samples needed
+### Audio Engine v2.0
+- 🎵 **Asset-Based Generation**: Use real rain recordings for natural, authentic sound
+- 🔄 **Seamless Looping**: Equal-power crossfades eliminate clicks and pops
+- 📊 **LUFS Normalization**: Consistent loudness at -14 LUFS (YouTube standard)
+- 🎚️ **Professional Processing**: Soft limiting, filtering, and fade-ins/outs
+- 🌧️ **Multi-Layer Mixing**: Bed layer + detail sounds + optional thunder
+- 💾 **Memory Efficient**: Chunk-based streaming for 8+ hour videos
+- 🎲 **Smart Randomization**: Avoids obvious repetition in loops
+
+### Video Generation
+- 🎨 **Procedural Rain Animation**: Generated rain drops with OpenCV
+- 🎬 **Background Video Loop**: Use custom background videos
+- 📹 **Streaming Rendering**: Memory-efficient for long durations
+
+### Legacy Features
+- 🌊 **Dynamic Intensity**: Interactive timeline editor (via Web UI)
+- 🎛️ **Beautiful Web UI**: Modern interface for variable intensity videos
+- 📦 **Fallback Mode**: High-quality procedural audio if no assets available
 
 ## Installation
 
@@ -50,102 +65,215 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-### 1. Create a Test Video (1 minute)
+### New Audio Engine (Recommended)
 
-Test the setup with a quick 1-minute video:
+The new audio engine provides professional, sleep-grade audio quality:
 
+#### 10-minute preview (fast test)
 ```bash
-python create_rain_video.py --test
+python -m rain generate --preview-minutes 10 --out preview.mp4 --mode procedural
 ```
 
-This will create `test_rain.mp4` - a 1-minute sample to verify everything works.
-
-### 2. Create a Full 12-Hour Video
-
-Generate a complete 12-hour rain video:
-
+#### Full 8-hour video with procedural visuals
 ```bash
-python create_rain_video.py
+python -m rain generate --duration-hours 8 --out rain_8hr.mp4 --mode procedural
 ```
 
-This creates `rain_sleep_video.mp4` - a 12-hour video ready for YouTube upload.
+#### With custom background video
+```bash
+python -m rain generate --duration-hours 8 --out rain_8hr.mp4 \
+    --mode video_loop --background-video my_background.mp4
+```
 
-**Note:** Generating a 12-hour video takes significant time and disk space:
+#### Audio only (for testing or separate use)
+```bash
+python -m rain generate --duration-hours 1 --out rain_1hr.wav --audio-only
+```
+
+### Asset Folder Setup (Optional)
+
+For the best quality, provide your own rain audio recordings:
+
+```
+assets/audio/
+├── bed/          # Long continuous rain (WAV, 48kHz, stereo, 60+ seconds each)
+│   ├── rain_light_01.wav
+│   ├── rain_medium_01.wav
+│   └── rain_heavy_01.wav
+├── details/      # Short sounds (WAV, 48kHz, stereo, 1-5 seconds)
+│   ├── droplet_01.wav
+│   └── splash_01.wav
+└── thunder/      # Distant thunder (WAV, 48kHz, stereo, 5-30 seconds)
+    └── thunder_distant_01.wav
+```
+
+**Note:** If no assets are provided, the system uses improved pink noise generation with proper stereo field.
+
+### Legacy Web UI
+
+The original web UI with dynamic intensity control is still available:
+
+```bash
+python web_ui.py
+```
+
+Then open your browser to **http://localhost:5000**
+
+See [WEB_UI_README.md](WEB_UI_README.md) for detailed UI documentation.
 - Processing time: 1-3 hours (depending on your system)
 - File size: ~2-5 GB
 - RAM usage: ~2-4 GB
 
-## Usage
+## CLI Reference
 
-### Main Script: create_rain_video.py
+### Main Command: `python -m rain generate`
 
-```bash
-python create_rain_video.py [OPTIONS]
-```
+Generate professional rain audio/video with the new audio engine.
 
 **Options:**
 
-- `--duration HOURS`: Video duration in hours (default: 12)
-- `--intensity {light,medium,heavy}`: Rain sound intensity (default: medium)
-- `--style {static,animated}`: Video style (default: static)
-- `--output FILE`: Output video filename (default: rain_sleep_video.mp4)
-- `--fps FPS`: Frames per second (default: 1 for static videos)
-- `--test`: Create a 1-minute test video
+```
+--duration-hours FLOAT        Duration in hours (default: 8.0)
+--preview-minutes FLOAT       Quick preview duration in minutes (overrides duration-hours)
+--out PATH                    Output file path (required)
+--assets-dir PATH             Assets directory (default: assets)
+--sample-rate INTEGER         Audio sample rate in Hz (default: 48000)
+--lufs FLOAT                  Target loudness in LUFS (default: -14.0)
+--mode [video_loop|procedural] Video mode (default: procedural)
+--background-video PATH       Background video for video_loop mode
+--no-thunder                  Disable thunder sounds
+--audio-only                  Generate audio only, no video
+--video-fps INTEGER           Video frame rate (default: 30)
+--video-resolution TEXT       Video resolution (default: 1920x1080)
+--seed INTEGER                Random seed for reproducibility
+```
 
 **Examples:**
 
 ```bash
-# Create a 1-hour video with light rain
-python create_rain_video.py --duration 1 --intensity light
+# 1-hour audio with pink noise fallback
+python -m rain generate --duration-hours 1 --out rain_1hr.wav --audio-only
 
-# Create a 6-hour video with heavy rain
-python create_rain_video.py --duration 6 --intensity heavy
+# 10-minute preview video
+python -m rain generate --preview-minutes 10 --out preview.mp4
 
-# Create a custom video
-python create_rain_video.py --duration 8 --intensity medium --output my_rain.mp4
+# Full 8-hour video, procedural animation
+python -m rain generate --duration-hours 8 --out rain_8hr.mp4 --mode procedural
+
+# 12-hour video with custom background (requires background.mp4)
+python -m rain generate --duration-hours 12 --out rain_12hr.mp4 \
+    --mode video_loop --background-video background.mp4
+
+# Disable thunder, custom seed for reproducibility
+python -m rain generate --duration-hours 2 --out rain_2hr.mp4 \
+    --no-thunder --seed 42
+
+# Custom video settings
+python -m rain generate --preview-minutes 5 --out test.mp4 \
+    --video-fps 24 --video-resolution 1280x720
 ```
 
-### Individual Components
+### Audio Analysis Tool
 
-#### Generate Audio Only
+Analyze generated audio for quality metrics:
 
 ```bash
+python scripts/analyze_audio.py output.wav
+```
+
+**Output includes:**
+- Peak level (dBFS)
+- Integrated loudness (LUFS) 
+- Clipping detection
+- RMS level
+- Dynamic range
+- Stereo correlation
+- Duration, sample rate, channels
+
+### Legacy Commands
+
+The original simple scripts are still available:
+
+```bash
+# Generate audio only (legacy)
 python generate_rain_audio.py --duration 3600 --intensity medium --output rain.wav
-```
 
-#### Generate Video Frames Only
-
-```bash
-python generate_rain_video.py --duration 60 --style static --output-dir frames
+# Create complete video (legacy)
+python create_rain_video.py --duration 8 --intensity medium
 ```
 
 ## How It Works
 
-### Audio Generation
+### Audio Engine v2.0
 
-The audio generator creates realistic rain sounds using procedural synthesis:
+The new audio engine generates professional sleep-grade audio through a sophisticated pipeline:
 
-1. **Raindrop Synthesis**: Each raindrop is generated using filtered white noise with an exponential decay envelope
-2. **Layering**: Thousands of individual drops are layered at random intervals
-3. **Intensity Control**: Drop frequency, size, and amplitude vary based on intensity setting
-4. **Ambient Background**: Subtle continuous noise adds depth and realism
+#### 1. Asset Loading & Preparation
+- Loads WAV files from assets/audio/ folders
+- Resamples all audio to target sample rate (48kHz by default)
+- Converts mono to stereo for proper stereo field
+- Stores audio as float32 arrays in memory
+
+#### 2. Chunk-Based Rendering
+- Generates audio in 20-second chunks with 3-second overlaps
+- Keeps memory usage constant regardless of total duration
+- Enables 8+ hour renders without RAM issues
+
+#### 3. Multi-Layer Mixing
+- **Bed Layer**: Continuous rain texture from long recordings
+  - Randomized segment selection to avoid obvious loops
+  - Tracks recently used segments to prevent repetition
+  - Equal-power crossfades at loop points for seamless transitions
+- **Details Layer**: Random droplet/splash sounds
+  - Poisson distribution for natural timing (1-3 per second)
+  - Random amplitude variation for realism
+- **Thunder Layer** (optional): Rare distant thunder
+  - 5% probability per chunk
+  - Long fade-ins and fade-outs for natural sound
+
+#### 4. Crossfading & Overlap-Add
+- Equal-power crossfades use √ curves for constant perceived loudness
+- Smooth transitions between chunks eliminate clicks
+- Overlap regions are blended seamlessly
+
+#### 5. Audio Processing Pipeline
+- **Filtering**: 
+  - High-pass at 25Hz to remove rumble
+  - Low-pass at 15kHz to tame hiss (optional)
+- **Fades**: Gentle fade-in (3s) and fade-out (5s)
+- **Limiting**: Soft limiter with ceiling at -1 dBFS
+- **Loudness Normalization**: 
+  - Measures integrated loudness with pyloudnorm
+  - Adjusts gain to target -14 LUFS (YouTube standard)
+  - Falls back to RMS normalization if pyloudnorm unavailable
+
+#### 6. Fallback Mode
+If no audio assets are provided:
+- Generates improved pink noise using Voss-McCartney algorithm
+- Proper stereo field with independent left/right channels
+- Band-pass filtering (200-8000 Hz) for rain-like spectrum
+- Synthetic raindrop sounds with randomized panning
+- Still applies full processing chain (limiting, LUFS, etc.)
 
 ### Video Generation
 
-The video generator creates calming visuals:
+#### Procedural Mode
+- Dark gradient background (night sky colors)
+- Animated rain streaks using particle system
+- Rendered with OpenCV frame-by-frame
+- Memory-efficient chunk-based rendering
 
-1. **Background Creation**: Generates dark, gradient backgrounds suitable for sleep content
-2. **Static Mode**: Single image repeated throughout (efficient for long videos)
-3. **Animated Mode**: Frame-by-frame raindrop animation (for shorter, more dynamic content)
+#### Video Loop Mode
+- Uses FFmpeg to loop an existing background video
+- Scales to target resolution
+- Drops original audio
+- Efficient for long durations
 
-### Combining Audio and Video
-
-The main script combines both:
-
-1. Generates the audio track
-2. Creates the visual background
-3. Uses MoviePy and FFmpeg to encode the final MP4 file
-4. Optimizes for YouTube upload (H.264 video, AAC audio)
+### Final Muxing
+- Combines silent video + processed audio
+- Uses FFmpeg with AAC audio codec
+- H.264 video codec for YouTube compatibility
+- Properly maps audio/video streams
 
 ## YouTube Upload Tips
 
@@ -187,97 +315,295 @@ perfect for overnight use.
 
 ## Technical Details
 
-### Audio Specifications
+### Audio Specifications (v2.0)
 
-- **Format**: WAV (uncompressed) → AAC (in final video)
-- **Sample Rate**: 44,100 Hz
-- **Bit Depth**: 16-bit
-- **Channels**: Mono (stereo coming soon)
+- **Format**: WAV (float32) → AAC in final video
+- **Sample Rate**: 48,000 Hz (configurable)
+- **Bit Depth**: 32-bit float during processing, 16-bit in final output
+- **Channels**: Stereo (2 channels)
+- **Loudness**: -14 LUFS (YouTube standard)
+- **Peak Level**: -1 dBFS maximum
+- **Filtering**: HPF @ 25Hz, optional LPF @ 15kHz
 
 ### Video Specifications
 
-- **Resolution**: 1920x1080 (1080p)
-- **Codec**: H.264 (x264)
-- **Frame Rate**: 1-30 fps (1 fps for static content)
-- **Bitrate**: 2000 kbps (adjustable)
+- **Resolution**: 1920x1080 (1080p, configurable)
+- **Codec**: H.264 (libx264)
+- **Frame Rate**: 30 fps (configurable)
+- **Bitrate**: Adaptive based on content
+- **Pixel Format**: yuv420p (maximum compatibility)
 
-### File Sizes (Approximate)
+### Performance & File Sizes
 
-| Duration | Audio (WAV) | Video (MP4) |
-|----------|-------------|-------------|
-| 1 hour   | ~300 MB     | ~900 MB     |
-| 6 hours  | ~1.8 GB     | ~5.3 GB     |
-| 12 hours | ~3.6 GB     | ~10.5 GB    |
+#### Memory Usage
+- **Chunk-based rendering**: ~200-500 MB RAM regardless of duration
+- **Asset loading**: ~50-100 MB per minute of loaded audio
+- **Video rendering**: ~500 MB-1 GB for OpenCV
+
+#### Processing Time (approximate, on modern CPU)
+- Audio generation: ~1-2 minutes per hour of output
+- Video rendering (procedural): ~5-10 minutes per hour @ 30fps
+- Video loop: ~1-2 minutes per hour
+- Total for 8-hour video: ~40-80 minutes
+
+#### File Sizes (approximate)
+
+| Duration | Audio (WAV) | Video (MP4) | Notes |
+|----------|-------------|-------------|-------|
+| 10 min   | ~55 MB      | ~180 MB     | Preview |
+| 1 hour   | ~330 MB     | ~1.1 GB     | Test |
+| 8 hours  | ~2.6 GB     | ~8.5 GB     | Standard |
+| 12 hours | ~3.9 GB     | ~12.7 GB    | Extended |
+
+*MP4 sizes with 192k AAC audio + medium quality H.264 video*
 
 ## Customization
 
-### Modify Rain Intensity
+### Using Your Own Audio Assets
 
-Edit `generate_rain_audio.py` to adjust:
-- `drops_per_second`: Number of raindrops
-- Drop type distribution (light/medium/heavy ratio)
-- Frequency ranges for different drop types
+For best results, provide your own rain recordings:
 
-### Change Visual Style
+1. **Bed samples** (assets/audio/bed/):
+   - Long continuous rain recordings (60+ seconds)
+   - High quality: 48kHz, stereo, 24-bit or higher
+   - Natural ambience, consistent rain texture
+   - Multiple variations for randomization
 
-Edit `generate_rain_video.py` to customize:
-- Background colors and gradients
-- Rain animation patterns
-- Video resolution
+2. **Detail samples** (assets/audio/details/):
+   - Short droplet or splash sounds (1-5 seconds)
+   - Individual rain drops, water impacts
+   - High quality: 48kHz, stereo
+   - Variety helps avoid repetition
 
-### Alternative: Use FFmpeg Directly
+3. **Thunder samples** (assets/audio/thunder/) [optional]:
+   - Distant thunder recordings (5-30 seconds)
+   - Low rumble, not too loud or scary
+   - Multiple variations for variety
 
-If you prefer to use FFmpeg directly:
+**Recording tips:**
+- Use a quality stereo microphone
+- Record in quiet environment (minimize wind, traffic)
+- Avoid clipping - leave headroom
+- Natural recordings sound better than synthetic
+
+### Adjusting Audio Settings
+
+Edit CLI parameters or modify the code:
+
+```python
+# In src/rain/audio_engine.py
+engine = RainAudioEngine(
+    loader=loader,
+    chunk_seconds=20.0,      # Chunk size for rendering
+    overlap_seconds=3.0,     # Crossfade duration
+    include_thunder=True,    # Enable/disable thunder
+    seed=42                  # For reproducibility
+)
+
+# Adjust detail sound frequency
+# In _add_details() method, change:
+num_details = self.rng.poisson(2 * samples / sr)  # 2 = average per second
+```
+
+### Customizing Video Visuals
+
+For procedural rain animation, edit `src/rain/video.py`:
+
+```python
+# Modify background colors
+top_color = np.array([40, 35, 30], dtype=np.uint8)     # Dark blue-gray
+bottom_color = np.array([20, 18, 15], dtype=np.uint8)  # Darker
+
+# Adjust raindrop parameters
+num_drops = 300              # Number of visible drops
+raindrops[:, 2] = np.random.uniform(15, 30, num_drops)  # Speed range
+raindrops[:, 3] = np.random.uniform(20, 50, num_drops)  # Length range
+```
+
+### Adjusting Audio Processing
+
+Modify processing parameters in CLI or code:
 
 ```bash
-# Generate audio first
-python generate_rain_audio.py --duration 43200 --output rain.wav
+# Different loudness target (e.g., for podcasts)
+python -m rain generate --duration-hours 1 --out rain.wav \
+    --audio-only --lufs -16.0
 
-# Generate background
-python -c "from generate_rain_video import create_static_background; create_static_background(1920, 1080, 'night').save('bg.png')"
+# Different sample rate
+python -m rain generate --duration-hours 1 --out rain.wav \
+    --audio-only --sample-rate 44100
+```
 
-# Combine with FFmpeg
-ffmpeg -loop 1 -i bg.png -i rain.wav -c:v libx264 -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p -shortest rain_video.mp4
+Or edit `src/rain/loudness.py`:
+
+```python
+# Adjust limiter ceiling
+audio = apply_limiter(audio, ceiling_db=-0.5)  # Less headroom
+
+# Adjust filter frequencies
+audio = apply_filters(audio, sr, hpf_freq=30.0, lpf_freq=12000.0)
+
+# Adjust fade durations
+audio = apply_fades(audio, sr, fade_in_sec=5.0, fade_out_sec=10.0)
 ```
 
 ## Troubleshooting
 
-### "MoviePy failed" or encoding errors
+### FFmpeg not found
 
-Install/update FFmpeg:
+**Error**: "FFmpeg is required but not found"
+
+**Solution**: Install FFmpeg:
 ```bash
 # Ubuntu/Debian
-sudo apt-get install ffmpeg
+sudo apt-get update && sudo apt-get install ffmpeg
 
 # macOS
 brew install ffmpeg
+
+# Windows
+# Download from https://ffmpeg.org/download.html and add to PATH
 ```
+
+After installation, restart your terminal.
 
 ### Memory errors with long videos
 
-For very long videos (12+ hours), consider:
-- Increasing system swap space
-- Generating audio and video separately
-- Using FFmpeg directly instead of MoviePy
+**Problem**: Out of memory when generating 8+ hour videos
+
+**Solutions**:
+1. The new audio engine should handle this automatically with chunk-based rendering
+2. If still having issues, try generating audio and video separately:
+   ```bash
+   # Generate audio only
+   python -m rain generate --duration-hours 8 --out audio.wav --audio-only
+   
+   # Generate silent video
+   python -m rain generate --duration-hours 8 --out video_silent.mp4 \
+       --mode procedural
+   
+   # Combine manually with FFmpeg
+   ffmpeg -i video_silent.mp4 -i audio.wav -c:v copy -c:a aac \
+       -b:a 192k -map 0:v:0 -map 1:a:0 -shortest final.mp4
+   ```
 
 ### Audio quality issues
 
-Adjust parameters in `generate_rain_audio.py`:
-- Increase `sample_rate` to 48000 Hz
-- Adjust `drops_per_second` for intensity
-- Modify filter frequencies
+**Problem**: Audio sounds harsh, has clicks, or inconsistent volume
+
+**Solutions**:
+1. Check LUFS normalization is working:
+   ```bash
+   python scripts/analyze_audio.py output.wav
+   ```
+2. Ensure you have pyloudnorm installed:
+   ```bash
+   pip install pyloudnorm
+   ```
+3. Verify no clipping in analysis output
+4. Try adjusting the limiter ceiling in code if needed
+
+### OpenCV not found (procedural video mode)
+
+**Error**: "OpenCV not available"
+
+**Solution**: Install OpenCV:
+```bash
+pip install opencv-python
+```
+
+### No audio assets warning
+
+**Message**: "No audio assets found, using improved procedural generation..."
+
+This is normal if you haven't added audio files to assets/audio/. The system will use high-quality pink noise generation as fallback. For best results, add your own rain recordings to assets/audio/bed/.
+
+### Video rendering is slow
+
+**Problem**: Video generation takes too long
+
+**Solutions**:
+1. Use video_loop mode with a short background video (faster than procedural)
+2. Reduce frame rate: `--video-fps 24` or even `--video-fps 15`
+3. Reduce resolution: `--video-resolution 1280x720`
+4. For 8+ hour videos, expect ~1 hour rendering time on modern hardware
+
+### Audio-video sync issues
+
+**Problem**: Audio and video durations don't match
+
+**Solution**: This shouldn't happen with the new system, but if it does:
+1. Check both files with:
+   ```bash
+   ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 video.mp4
+   ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 audio.wav
+   ```
+2. The muxer uses `-shortest` flag to handle mismatches automatically
+
+## Project Structure
+
+```
+Rain/
+├── src/
+│   └── rain/
+│       ├── __init__.py          # Package initialization
+│       ├── __main__.py          # CLI entry point (python -m rain)
+│       ├── audio_engine.py      # Core audio generation engine
+│       ├── loudness.py          # LUFS normalization & processing
+│       ├── video.py             # Video generation utilities
+│       └── muxer.py             # FFmpeg wrapper for muxing
+├── assets/
+│   └── audio/
+│       ├── bed/                 # Long rain recordings (60s+)
+│       │   └── .gitkeep
+│       ├── details/             # Short droplet sounds (1-5s)
+│       │   └── .gitkeep
+│       └── thunder/             # Distant thunder (optional)
+│           └── .gitkeep
+├── scripts/
+│   └── analyze_audio.py         # Audio quality analysis tool
+├── tests/
+│   ├── __init__.py
+│   └── test_audio_engine.py    # Audio engine tests
+├── templates/                   # Web UI templates
+├── requirements.txt             # Python dependencies
+├── README.md                    # This file
+├── web_ui.py                    # Legacy web UI with intensity editor
+├── generate_rain_audio.py       # Legacy audio generator
+├── generate_rain_video.py       # Legacy video generator
+└── create_rain_video.py         # Legacy main script
+```
 
 ## Contributing
 
-Contributions welcome! Feel free to:
-- Add new rain patterns (thunderstorms, drizzle, etc.)
-- Improve audio quality
-- Add new visual styles
-- Optimize performance
+Contributions welcome! Areas for improvement:
+
+- Additional audio processing features (reverb, EQ)
+- More video animation styles
+- Performance optimizations
+- Additional output formats
+- Better asset management tools
 
 ## License
 
 This project is open source. Feel free to use, modify, and distribute.
+
+## Changelog
+
+### Version 2.0 (Current)
+- Complete audio engine rewrite with professional quality
+- Asset-based generation with real recordings
+- LUFS normalization and soft limiting
+- Seamless crossfading and overlap-add
+- Memory-efficient chunk-based rendering
+- Improved procedural fallback with pink noise
+- New CLI with extensive options
+- Audio analysis tools
+
+### Version 1.0 (Legacy)
+- Basic procedural audio generation
+- Simple video creation
+- Web UI with intensity editor
 
 ## Acknowledgments
 

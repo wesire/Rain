@@ -11,9 +11,8 @@ import subprocess
 from generate_rain_audio import generate_rain_audio
 from generate_rain_video import generate_rain_video_frames, create_static_background
 from PIL import Image
-from moviepy import ImageClip, AudioFileClip, concatenate_videoclips
+from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
 from tqdm import tqdm
-
 
 def create_rain_video(duration_hours=12, intensity='medium', style='static', 
                      output_file='rain_sleep_video.mp4', fps=30):
@@ -108,9 +107,9 @@ def create_rain_video(duration_hours=12, intensity='medium', style='static',
     except Exception as e:
         print(f"Error creating video: {e}")
         print("\nAlternative: Use FFmpeg directly")
-        print(f"ffmpeg -loop 1 -i {background_file} -i {audio_file} -c:v libx264 "
-              f"-tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p "
-              f"-shortest {output_file}")
+        print(f"ffmpeg -loop 1 -i {background_file} -i {audio_file} -c:v libx264 \
+              -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p \
+              -shortest {output_file}")
         sys.exit(1)
 
 
@@ -156,7 +155,6 @@ def create_quick_test_video(duration_seconds=60, output_file='test_rain.mp4'):
     
     print(f"\nTest video created: {output_file}")
     print(f"Duration: {duration_seconds} seconds")
-
 
 def main():
     parser = argparse.ArgumentParser(
